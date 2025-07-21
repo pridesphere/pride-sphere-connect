@@ -2,39 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* PrideSphere Design System - Magical Pride Theme
+All colors MUST be HSL for perfect theming.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Pride Color Palette */
+    --pride-red: 0 85% 60%;
+    --pride-orange: 25 95% 60%;
+    --pride-yellow: 50 95% 65%;
+    --pride-green: 140 60% 50%;
+    --pride-blue: 215 80% 60%;
+    --pride-purple: 280 70% 65%;
+    --pride-pink: 320 75% 70%;
+    --pride-trans-blue: 195 100% 85%;
+    --pride-trans-pink: 325 100% 85%;
+    
+    /* Background System */
+    --background: 250 20% 98%;
+    --background-muted: 250 15% 96%;
+    --background-accent: 250 30% 94%;
+    --foreground: 250 25% 15%;
+    
+    /* Card System */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 250 25% 15%;
+    --card-hover: 250 30% 98%;
+    
+    /* Popover System */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 250 25% 15%;
+    
+    /* Primary Pride Gradient */
+    --primary: 280 70% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 280 80% 75%;
+    
+    /* Secondary System */
+    --secondary: 250 15% 94%;
+    --secondary-foreground: 250 25% 25%;
+    --secondary-hover: 250 20% 90%;
+    
+    /* Muted System */
+    --muted: 250 10% 92%;
+    --muted-foreground: 250 15% 45%;
+    
+    /* Accent System */
+    --accent: 215 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 215 90% 70%;
+    
+    /* Status Colors */
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 140 60% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 50 95% 65%;
+    --warning-foreground: 30 25% 15%;
+    
+    /* Interactive Elements */
+    --border: 250 15% 88%;
+    --input: 250 15% 94%;
+    --ring: 280 70% 65%;
+    --ring-offset: 0 0% 100%;
+    
+    /* Magical Gradients */
+    --gradient-pride: linear-gradient(135deg, 
+      hsl(var(--pride-red)) 0%, 
+      hsl(var(--pride-orange)) 16.66%, 
+      hsl(var(--pride-yellow)) 33.33%, 
+      hsl(var(--pride-green)) 50%, 
+      hsl(var(--pride-blue)) 66.66%, 
+      hsl(var(--pride-purple)) 83.33%, 
+      hsl(var(--pride-pink)) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-glow)));
+    --gradient-magical: linear-gradient(135deg, hsl(var(--pride-purple)), hsl(var(--pride-pink)));
+    --gradient-trans: linear-gradient(135deg, hsl(var(--pride-trans-blue)), hsl(var(--pride-trans-pink)));
+    
+    /* Shadows & Effects */
+    --shadow-magical: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --shadow-card: 0 4px 20px -2px hsl(var(--foreground) / 0.08);
+    
+    /* Animation Variables */
+    --transition-magical: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
@@ -56,41 +110,59 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Dark Pride Theme */
+    --background: 250 25% 8%;
+    --background-muted: 250 20% 10%;
+    --background-accent: 250 15% 12%;
+    --foreground: 250 10% 95%;
+    
+    --card: 250 20% 12%;
+    --card-foreground: 250 10% 95%;
+    --card-hover: 250 15% 15%;
+    
+    --popover: 250 20% 12%;
+    --popover-foreground: 250 10% 95%;
+    
+    --primary: 280 70% 70%;
+    --primary-foreground: 250 25% 8%;
+    --primary-glow: 280 80% 80%;
+    
+    --secondary: 250 15% 18%;
+    --secondary-foreground: 250 10% 85%;
+    --secondary-hover: 250 20% 22%;
+    
+    --muted: 250 10% 16%;
+    --muted-foreground: 250 5% 60%;
+    
+    --accent: 215 80% 65%;
+    --accent-foreground: 250 25% 8%;
+    --accent-glow: 215 90% 75%;
+    
+    --destructive: 0 85% 65%;
+    --destructive-foreground: 250 25% 8%;
+    --success: 140 60% 55%;
+    --success-foreground: 250 25% 8%;
+    --warning: 50 95% 70%;
+    --warning-foreground: 250 25% 8%;
+    
+    --border: 250 15% 20%;
+    --input: 250 15% 16%;
+    --ring: 280 70% 70%;
+    --ring-offset: 250 25% 8%;
+    
+    /* Dark mode gradients maintain the magical feel */
+    --shadow-magical: 0 10px 30px -10px hsl(var(--primary) / 0.4);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
+    
+    --sidebar-background: 250 20% 10%;
+    --sidebar-foreground: 250 10% 90%;
+    --sidebar-primary: 280 70% 65%;
+    --sidebar-primary-foreground: 250 25% 8%;
+    --sidebar-accent: 250 15% 18%;
+    --sidebar-accent-foreground: 250 10% 90%;
+    --sidebar-border: 250 15% 20%;
+    --sidebar-ring: 280 70% 70%;
   }
 }
 
@@ -100,6 +172,84 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-muted)) 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Magical Pride Utilities */
+  .pride-gradient {
+    background: var(--gradient-pride);
+  }
+  
+  .magical-gradient {
+    background: var(--gradient-magical);
+  }
+  
+  .trans-gradient {
+    background: var(--gradient-trans);
+  }
+  
+  .sparkle-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .sparkle-effect::before {
+    content: '✨';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: sparkle 2s infinite;
+    pointer-events: none;
+  }
+  
+  .glow-text {
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+  
+  .magical-border {
+    border: 2px solid transparent;
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+                var(--gradient-magical) border-box;
+  }
+  
+  .pride-text {
+    background: var(--gradient-pride);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--gradient-magical);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gradient-pride);
   }
 }
