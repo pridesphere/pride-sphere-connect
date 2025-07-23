@@ -4,13 +4,49 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
+import AuthPage from "./components/auth/AuthPage";
 import Index from "./pages/Index";
 import Communities from "./pages/Communities";
 import Messages from "./pages/Messages";
 import Wellness from "./pages/Wellness";
 import Profile from "./pages/Profile";
 import Verify from "./pages/Verify";
+import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
+
+const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-lg font-medium">Loading PrideSphere...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/communities" element={<Communities />} />
+      <Route path="/messages" element={<Messages />} />
+      <Route path="/wellness" element={<Wellness />} />
+      <Route path="/events" element={<Events />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/verify" element={<Verify />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -21,16 +57,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/communities" element={<Communities />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/wellness" element={<Wellness />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/verify" element={<Verify />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
