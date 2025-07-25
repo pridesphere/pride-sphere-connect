@@ -98,7 +98,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
             <Button 
               onClick={onJoin} 
               className="w-full group"
-              variant={community.is_premium ? "premium" : "default"}
+              variant={community.is_premium ? "magical" : "default"}
             >
               {community.is_premium && <Lock className="mr-2 h-4 w-4" />}
               🎯 Find Your Tribe

@@ -37,11 +37,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({ tier, isCurrentPlan, on
   const getVariant = (name: string) => {
     switch (name.toLowerCase()) {
       case 'ambassador':
-        return 'premium';
+        return 'magical';
       case 'explorer':
         return 'secondary';
       case 'community':
-        return 'accent';
+        return 'pride';
       default:
         return 'default';
     }
