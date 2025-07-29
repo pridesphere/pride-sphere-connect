@@ -5,11 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import CreatePostModal from "./CreatePostModal";
 
 const CreatePost = () => {
   const [postContent, setPostContent] = useState("");
   const [selectedMood, setSelectedMood] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const moods = [
     { emoji: "✨", label: "Magical", color: "pride-purple" },
@@ -63,7 +65,9 @@ const CreatePost = () => {
             placeholder="🌟 Spark a Post... Share your thoughts, feelings, or magic! ✨"
             value={postContent}
             onChange={(e) => setPostContent(e.target.value)}
-            className="min-h-[120px] resize-none border-none focus:ring-2 focus:ring-primary/20 rounded-xl bg-background-muted"
+            onClick={() => setCreateModalOpen(true)}
+            className="min-h-[120px] resize-none border-none focus:ring-2 focus:ring-primary/20 rounded-xl bg-background-muted cursor-pointer"
+            readOnly
           />
 
           {/* Mood Selector */}
@@ -112,8 +116,7 @@ const CreatePost = () => {
             </div>
             
             <Button
-              onClick={handlePost}
-              disabled={!postContent.trim()}
+              onClick={() => setCreateModalOpen(true)}
               variant="spark"
               className="min-w-[140px]"
             >
@@ -122,6 +125,16 @@ const CreatePost = () => {
             </Button>
           </div>
         </div>
+
+        {/* Create Post Modal */}
+        <CreatePostModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+          onSuccess={() => {
+            // Refresh feed or update posts list
+            console.log('Post created successfully');
+          }}
+        />
       </CardContent>
     </Card>
   );

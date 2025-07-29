@@ -1,10 +1,16 @@
+import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Star, MessageCircle, Lock, Globe } from "lucide-react";
+import CreateCommunityModal from "@/components/communities/CreateCommunityModal";
+import { useNavigate } from "react-router-dom";
 
 const Communities = () => {
+  const navigate = useNavigate();
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  
   const communities = [
     {
       id: "1",
@@ -81,7 +87,11 @@ const Communities = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Connect with amazing communities where you belong. Every space is moderated and safe. ✨
           </p>
-          <Button variant="magical" size="lg">
+          <Button 
+            variant="magical" 
+            size="lg"
+            onClick={() => setCreateModalOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Create New Community
           </Button>
@@ -157,12 +167,26 @@ const Communities = () => {
             <p className="text-muted-foreground">
               Create a magical space for your interests and connect with like-minded souls!
             </p>
-            <Button variant="magical" size="lg">
+            <Button 
+              variant="magical" 
+              size="lg"
+              onClick={() => setCreateModalOpen(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Start Your Own Community
             </Button>
           </CardContent>
         </Card>
+
+        {/* Create Community Modal */}
+        <CreateCommunityModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+          onSuccess={(communityId) => {
+            // Could navigate to new community page when that's implemented
+            console.log('Community created:', communityId);
+          }}
+        />
       </div>
     </Layout>
   );
