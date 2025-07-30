@@ -4,8 +4,10 @@ import { Search, Menu, MessageCircle, Heart, Users, Sparkles, Moon, Sun, Bell } 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +20,27 @@ const Navigation = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
+
+  const getUserInitials = () => {
+    if (profile?.display_name) {
+      return profile.display_name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "🏳️‍🌈";
+  };
 
   const navItems = [
     { label: "Home", path: "/", icon: Heart, color: "pride-red" },
@@ -94,15 +117,23 @@ const Navigation = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <div className="w-8 h-8 bg-gradient-pride rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">A</span>
-                  </div>
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={profile?.avatar_url || ""} />
+                    <AvatarFallback className="bg-gradient-pride text-white font-semibold text-sm">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem>
                   <Link to="/profile" className="flex items-center w-full">
                     View Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link to="/profile/edit" className="flex items-center w-full">
+                    Edit ✨ Profile
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
@@ -115,7 +146,7 @@ const Navigation = () => {
                     🪄 Verify Me
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem className="text-destructive" onClick={() => signOut()}>
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>

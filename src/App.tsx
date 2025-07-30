@@ -11,6 +11,8 @@ import Communities from "./pages/Communities";
 import Messages from "./pages/Messages";
 import Wellness from "./pages/Wellness";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import Settings from "./pages/Settings";
 import Verify from "./pages/Verify";
 import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
@@ -41,6 +43,8 @@ const AppRoutes = () => {
       <Route path="/wellness" element={<Wellness />} />
       <Route path="/events" element={<Events />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/profile/edit" element={<EditProfile />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="/verify" element={<Verify />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

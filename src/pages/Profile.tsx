@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -188,13 +189,17 @@ const Profile = () => {
                 </div>
 
                 <div className="flex items-center justify-center md:justify-start space-x-4">
-                  <Button variant="magical">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
+                  <Button asChild variant="magical">
+                    <Link to="/profile/edit">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit ✨ Profile
+                    </Link>
                   </Button>
-                  <Button variant="outline">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
+                  <Button asChild variant="outline">
+                    <Link to="/settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
                   </Button>
                 </div>
               </div>
