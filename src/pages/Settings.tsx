@@ -11,12 +11,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTheme } from "next-themes";
+import { useThemeAccent } from "@/hooks/useThemeAccent";
 import Layout from "@/components/layout/Layout";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { themeAccent, updateThemeAccent, themePresets } = useThemeAccent();
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -26,13 +28,17 @@ const Settings = () => {
     newMessageAlerts: true,
     communityMentions: true,
     mentalHealthReminders: true,
-    language: "en",
-    accentColor: "rainbow"
+    language: "en"
   });
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     toast.success("Setting updated!");
+  };
+
+  const handleThemeChange = async (newTheme: string) => {
+    await updateThemeAccent(newTheme as any);
+    toast.success("✨ Theme updated! Your colors are shining!");
   };
 
   const handleDeleteAccount = async () => {
@@ -281,7 +287,7 @@ const Settings = () => {
                     <Label>Theme Accent Color</Label>
                     <p className="text-sm text-muted-foreground">Choose your Pride flag palette</p>
                   </div>
-                  <Select value={settings.accentColor} onValueChange={(value) => handleSettingChange('accentColor', value)}>
+                  <Select value={themeAccent} onValueChange={handleThemeChange}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>

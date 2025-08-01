@@ -468,6 +468,7 @@ export type Database = {
           is_verified: boolean | null
           location: string | null
           pronouns: string | null
+          theme_accent: string | null
           updated_at: string | null
           user_id: string
           username: string | null
@@ -483,6 +484,7 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
+          theme_accent?: string | null
           updated_at?: string | null
           user_id: string
           username?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
+          theme_accent?: string | null
           updated_at?: string | null
           user_id?: string
           username?: string | null
