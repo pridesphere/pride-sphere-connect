@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, MessageCircle, Video, Phone, Image, Smile, Mic, Heart, Rainbow, Flame, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, MessageCircle, Video, Phone, Image, Smile, Mic, Heart, Rainbow, Flame, Sparkles, Send, Gift, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import ChatWindow from "@/components/chat/ChatWindow";
+import StartNewChatModal from "@/components/chat/StartNewChatModal";
+import CallModal from "@/components/chat/CallModal";
 
 interface Conversation {
   id: string;
@@ -55,6 +56,9 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCallModal, setShowCallModal] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
+  const [showStartChatModal, setShowStartChatModal] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ user_id: string; emoji: string }>>>({});
 
   // Fetch conversations where user is a participant
   useEffect(() => {
@@ -114,7 +118,7 @@ const Messages = () => {
     fetchConversations();
   }, [user]);
 
-  // Fetch messages for selected conversation
+  // Fetch messages and reactions for selected conversation
   useEffect(() => {
     if (!selectedConversation) return;
 
@@ -150,6 +154,26 @@ const Messages = () => {
       );
 
       setMessages(messagesWithProfiles);
+
+      // Fetch reactions for all messages
+      if (data && data.length > 0) {
+        const { data: reactionsData } = await supabase
+          .from('message_reactions')
+          .select('message_id, user_id, emoji')
+          .in('message_id', data.map(m => m.id));
+
+        const reactionsMap: Record<string, Array<{ user_id: string; emoji: string }>> = {};
+        reactionsData?.forEach(reaction => {
+          if (!reactionsMap[reaction.message_id]) {
+            reactionsMap[reaction.message_id] = [];
+          }
+          reactionsMap[reaction.message_id].push({
+            user_id: reaction.user_id,
+            emoji: reaction.emoji
+          });
+        });
+        setMessageReactions(reactionsMap);
+      }
     };
 
     fetchMessages();
@@ -195,13 +219,89 @@ const Messages = () => {
   };
 
   const addReaction = async (messageId: string, emoji: string) => {
-    // TODO: Implement reactions table and logic
-    toast.success(`Reacted with ${emoji}`);
+    if (!user) return;
+
+    try {
+      // Check if user already reacted with this emoji
+      const { data: existingReaction } = await supabase
+        .from('message_reactions')
+        .select('*')
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji)
+        .single();
+
+      if (existingReaction) {
+        // Remove reaction
+        await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
+      } else {
+        // Add reaction
+        await supabase
+          .from('message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+            emoji
+          });
+      }
+
+      // Refresh reactions
+      const { data: reactionsData } = await supabase
+        .from('message_reactions')
+        .select('message_id, user_id, emoji')
+        .eq('message_id', messageId);
+
+      setMessageReactions(prev => ({
+        ...prev,
+        [messageId]: reactionsData || []
+      }));
+
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Failed to add reaction');
+    }
   };
 
-  const startCall = (type: 'audio' | 'video') => {
-    setCallType(type);
-    setShowCallModal(true);
+  const startCall = async (type: 'audio' | 'video') => {
+    if (!selectedConversation || !user) return;
+
+    try {
+      // Check if both users have calls enabled
+      const participants = conversations.find(c => c.id === selectedConversation)?.participants || [];
+      const otherParticipants = participants.filter(p => p.user_id !== user.id);
+
+      for (const participant of otherParticipants) {
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('calls_enabled')
+          .eq('user_id', participant.user_id)
+          .single();
+
+        if (settings && !settings.calls_enabled) {
+          toast.error("This user hasn't enabled calls yet 💡 Respect their vibe!");
+          return;
+        }
+      }
+
+      // Create call record
+      await supabase
+        .from('calls')
+        .insert({
+          conversation_id: selectedConversation,
+          caller_id: user.id,
+          call_type: type,
+          status: 'initiated'
+        });
+
+      setCallType(type);
+      setShowCallModal(true);
+    } catch (error) {
+      console.error('Error starting call:', error);
+      toast.error('Failed to start call');
+    }
   };
 
   const getConversationName = (conversation: Conversation) => {
@@ -233,7 +333,11 @@ const Messages = () => {
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold pride-text">💬 Messages</h2>
-              <Button variant="magical" size="icon">
+              <Button 
+                variant="magical" 
+                size="icon"
+                onClick={() => setShowStartChatModal(true)}
+              >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -387,32 +491,60 @@ const Messages = () => {
                               <p className="text-sm">{message.content}</p>
                               
                               {/* Message Reactions */}
-                              <div className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                              <div className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1 shadow-lg">
                                 <button 
                                   onClick={() => addReaction(message.id, '🌈')}
-                                  className="hover:scale-110 transition-transform"
+                                  className="hover:scale-110 transition-transform text-lg"
                                 >
                                   🌈
                                 </button>
                                 <button 
                                   onClick={() => addReaction(message.id, '❤️')}
-                                  className="hover:scale-110 transition-transform"
+                                  className="hover:scale-110 transition-transform text-lg"
                                 >
                                   ❤️
                                 </button>
                                 <button 
                                   onClick={() => addReaction(message.id, '🔥')}
-                                  className="hover:scale-110 transition-transform"
+                                  className="hover:scale-110 transition-transform text-lg"
                                 >
                                   🔥
                                 </button>
                                 <button 
                                   onClick={() => addReaction(message.id, '💅')}
-                                  className="hover:scale-110 transition-transform"
+                                  className="hover:scale-110 transition-transform text-lg"
                                 >
                                   💅
                                 </button>
+                                <button 
+                                  onClick={() => addReaction(message.id, '✨')}
+                                  className="hover:scale-110 transition-transform text-lg"
+                                >
+                                  ✨
+                                </button>
                               </div>
+                              
+                              {/* Display Reactions */}
+                              {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {Object.entries(
+                                    messageReactions[message.id].reduce((acc, reaction) => {
+                                      const key = reaction.emoji;
+                                      if (!acc[key]) acc[key] = [];
+                                      acc[key].push(reaction.user_id);
+                                      return acc;
+                                    }, {} as Record<string, string[]>)
+                                  ).map(([emoji, userIds]) => (
+                                    <div
+                                      key={emoji}
+                                      className="flex items-center space-x-1 bg-muted px-2 py-1 rounded-full text-xs"
+                                    >
+                                      <span>{emoji}</span>
+                                      <span className="text-muted-foreground">{userIds.length}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             
                             <div className="text-xs text-muted-foreground mt-1">
@@ -488,34 +620,25 @@ const Messages = () => {
         </div>
       </div>
 
+      {/* Start New Chat Modal */}
+      <StartNewChatModal
+        isOpen={showStartChatModal}
+        onClose={() => setShowStartChatModal(false)}
+        onChatCreated={(conversationId) => {
+          setSelectedConversation(conversationId);
+          // Refresh conversations list
+          setTimeout(() => window.location.reload(), 500);
+        }}
+      />
+
       {/* Call Modal */}
-      <Dialog open={showCallModal} onOpenChange={setShowCallModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center">
-              {callType === 'video' ? '📹' : '📞'} Call your Pride fam 💬✨
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-center space-y-4 p-4">
-            <div className="text-6xl mb-4">
-              {callType === 'video' ? '📹' : '📞'}
-            </div>
-            <p className="text-muted-foreground">
-              {callType === 'video' ? 'Video' : 'Audio'} calling feature is coming soon!
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Both users need to consent to calls for privacy protection.
-            </p>
-            <Button 
-              variant="magical" 
-              onClick={() => setShowCallModal(false)}
-              className="w-full"
-            >
-              Got it! ✨
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CallModal
+        isOpen={showCallModal}
+        onClose={() => setShowCallModal(false)}
+        callType={callType}
+        participantName={selectedConvData ? getConversationName(selectedConvData) : 'Unknown'}
+        participantAvatar={undefined}
+      />
     </Layout>
   );
 };

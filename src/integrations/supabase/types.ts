@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      calls: {
+        Row: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          conversation_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -319,12 +352,38 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
           conversation_id: string
           created_at: string | null
           id: string
+          media_url: string | null
+          message_type: string | null
           user_id: string
         }
         Insert: {
@@ -332,6 +391,8 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           id?: string
+          media_url?: string | null
+          message_type?: string | null
           user_id: string
         }
         Update: {
@@ -339,6 +400,8 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           id?: string
+          media_url?: string | null
+          message_type?: string | null
           user_id?: string
         }
         Relationships: [
@@ -551,6 +614,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          calls_enabled: boolean | null
+          created_at: string
+          dms_enabled: boolean | null
+          id: string
+          profile_visibility: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls_enabled?: boolean | null
+          created_at?: string
+          dms_enabled?: boolean | null
+          id?: string
+          profile_visibility?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls_enabled?: boolean | null
+          created_at?: string
+          dms_enabled?: boolean | null
+          id?: string
+          profile_visibility?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
