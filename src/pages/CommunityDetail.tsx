@@ -9,6 +9,8 @@ import { ArrowLeft, Users, Crown, Globe, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import CommunityCreatePost from '@/components/communities/CommunityCreatePost';
+import PostCard from '@/components/feed/PostCard';
 
 const CommunityDetail = () => {
   const { id } = useParams();
@@ -19,11 +21,14 @@ const CommunityDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
       fetchCommunity();
       checkMembership();
+      fetchCommunityPosts();
     }
   }, [id, user]);
 
@@ -155,6 +160,105 @@ const CommunityDetail = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const fetchCommunityPosts = async () => {
+    if (!id) return;
+    
+    try {
+      setPostsLoading(true);
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('community_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
+
+      // Get unique user IDs from posts (excluding anonymous posts)
+      const userIds = [...new Set(
+        postsData
+          .filter(post => !post.is_anonymous && post.user_id)
+          .map(post => post.user_id)
+      )];
+
+      // Fetch profiles for these users
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, username, avatar_url, is_verified, pronouns')
+        .in('user_id', userIds);
+
+      // Create a map of user_id to profile
+      const profileMap = new Map();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.user_id, profile);
+      });
+      
+      // Transform the data to match PostCard props
+      const transformedPosts = postsData.map(post => {
+        const profile = profileMap.get(post.user_id);
+        
+        return {
+          id: post.id,
+          author: {
+            name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || "Unknown User"),
+            pronouns: post.is_anonymous ? "" : (profile?.pronouns || ""),
+            verified: profile?.is_verified || false,
+            avatar: post.is_anonymous ? undefined : profile?.avatar_url,
+            isAnonymous: post.is_anonymous
+          },
+          content: post.content,
+          mood: post.mood,
+          moodEmoji: getMoodEmoji(post.mood),
+          timestamp: formatTimestamp(post.created_at),
+          likes: post.likes_count || 0,
+          comments: post.comments_count || 0,
+          shares: 0,
+          hashtags: post.hashtags || [],
+          isLiked: false
+        };
+      });
+      
+      setPosts(transformedPosts);
+    } catch (error) {
+      console.error('Error fetching community posts:', error);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  const getMoodEmoji = (mood: string) => {
+    const moodMap: { [key: string]: string } = {
+      "Magical": "✨",
+      "Rainbow": "🌈",
+      "Loved": "💖",
+      "Fierce": "🔥",
+      "Shining": "🌟",
+      "Growth": "💚",
+      "Calm": "💙",
+      "Supported": "🫂"
+    };
+    return moodMap[mood] || "✨";
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const now = new Date();
+    const postTime = new Date(timestamp);
+    const diffInHours = Math.floor((now.getTime() - postTime.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
+
+  const handlePostCreated = () => {
+    fetchCommunityPosts();
   };
 
   const handleDeleteCommunity = async () => {
@@ -328,18 +432,52 @@ const CommunityDetail = () => {
         </Card>
 
         {/* Community Content */}
+        {isMember && (
+          <div className="space-y-6">
+            <CommunityCreatePost 
+              communityId={id!} 
+              onPostCreated={handlePostCreated}
+            />
+          </div>
+        )}
+        
         <Card>
           <CardHeader>
             <CardTitle>Community Posts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Coming Soon!</h3>
-              <p className="text-muted-foreground">
-                Community posts and discussions will be available in the next update.
-              </p>
-            </div>
+            {postsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-muted rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-24"></div>
+                        <div className="h-3 bg-muted rounded w-16"></div>
+                      </div>
+                    </div>
+                    <div className="h-20 bg-muted rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : posts.length > 0 ? (
+              <div className="space-y-6">
+                {posts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+                <p className="text-muted-foreground">
+                  {isMember 
+                    ? "Be the first to share something magical in this community!" 
+                    : "Join this community to see and create posts."}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
