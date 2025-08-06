@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -21,6 +22,7 @@ export const useNotifications = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
+      subscribeToNotifications();
     } else {
       setNotifications([]);
       setUnreadCount(0);
@@ -32,7 +34,14 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      // For now, create mock notifications since we don't have the table yet
+      // For now, create mock notifications since we don't have the notifications table yet
+      // In production, this would be:
+      // const { data: notifications, error } = await supabase
+      //   .from('notifications')
+      //   .select('*')
+      //   .eq('user_id', user.id)
+      //   .order('created_at', { ascending: false });
+
       const mockNotifications: Notification[] = [
         {
           id: '1',
@@ -72,22 +81,74 @@ export const useNotifications = () => {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, is_read: true }
-          : notification
+  const subscribeToNotifications = () => {
+    if (!user) return;
+
+    // Subscribe to real-time updates for notifications
+    const channel = supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchNotifications();
+        }
       )
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      // In production, this would update the database:
+      // await supabase
+      //   .from('notifications')
+      //   .update({ is_read: true })
+      //   .eq('id', notificationId)
+      //   .eq('user_id', user?.id);
+
+      // For now, update local state
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, is_read: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, is_read: true }))
-    );
-    setUnreadCount(0);
+    if (!user) return;
+
+    try {
+      // In production, this would update the database:
+      // await supabase
+      //   .from('notifications')
+      //   .update({ is_read: true })
+      //   .eq('user_id', user.id)
+      //   .eq('is_read', false);
+
+      // For now, update local state
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, is_read: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
   };
 
   return {

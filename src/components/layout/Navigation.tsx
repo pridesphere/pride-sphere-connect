@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
@@ -10,6 +11,7 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useMessages } from "@/hooks/useMessages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +26,8 @@ const Navigation = () => {
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
-  const { unreadCount } = useNotifications();
+  const { unreadCount: notificationUnreadCount } = useNotifications();
+  const { unreadCount: messageUnreadCount } = useMessages();
 
   const getUserInitials = () => {
     if (profile?.display_name) {
@@ -49,7 +52,7 @@ const Navigation = () => {
   const navItems = [
     { label: "Home", path: "/", icon: Heart, color: "pride-red" },
     { label: "Communities", path: "/communities", icon: Users, color: "pride-blue" },
-    { label: "Messages", path: "/messages", icon: MessageCircle, color: "pride-purple" },
+    { label: "Messages", path: "/messages", icon: MessageCircle, color: "pride-purple", badgeCount: messageUnreadCount },
     { label: "Mental Health", path: "/wellness", icon: Sparkles, color: "pride-pink" },
   ];
 
@@ -92,9 +95,9 @@ const Navigation = () => {
                   >
                     <IconComponent className="w-4 h-4" />
                     <span className="hidden lg:inline">{item.label}</span>
-                    {item.label === "Messages" && (
+                    {item.badgeCount && item.badgeCount > 0 && (
                       <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs bg-pride-red border-0 text-white">
-                        3
+                        {item.badgeCount > 9 ? '9+' : item.badgeCount}
                       </Badge>
                     )}
                   </Button>
@@ -113,9 +116,9 @@ const Navigation = () => {
               aria-label="View notifications"
             >
               <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
+              {notificationUnreadCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs bg-pride-red border-0 text-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
                 </Badge>
               )}
             </Button>
@@ -180,6 +183,11 @@ const Navigation = () => {
                       <Link to={item.path} className="flex items-center w-full">
                         <item.icon className="w-4 h-4 mr-2" />
                         {item.label}
+                        {item.badgeCount && item.badgeCount > 0 && (
+                          <Badge className="ml-auto w-5 h-5 text-xs bg-pride-red border-0 text-white">
+                            {item.badgeCount > 9 ? '9+' : item.badgeCount}
+                          </Badge>
+                        )}
                       </Link>
                     </DropdownMenuItem>
                   ))}

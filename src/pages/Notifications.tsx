@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -12,6 +13,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
   const { toast } = useToast();
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
 
   const handleNotificationClick = async (notification: any) => {
     if (!notification.is_read) {
@@ -24,11 +26,24 @@ const Notifications = () => {
   };
 
   const handleMarkAllRead = async () => {
-    await markAllAsRead();
-    toast({
-      title: "All notifications marked as read! ✨",
-      description: "You're all caught up!"
-    });
+    if (unreadCount === 0) return;
+    
+    setMarkingAllAsRead(true);
+    try {
+      await markAllAsRead();
+      toast({
+        title: "All notifications marked as read! ✨",
+        description: "You're all caught up!"
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to update notifications",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setMarkingAllAsRead(false);
+    }
   };
 
   if (loading) {
@@ -73,9 +88,13 @@ const Notifications = () => {
             </p>
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" onClick={handleMarkAllRead}>
+            <Button 
+              variant="outline" 
+              onClick={handleMarkAllRead}
+              disabled={markingAllAsRead}
+            >
               <CheckCheck className="w-4 h-4 mr-2" />
-              Mark All Read
+              {markingAllAsRead ? "Marking..." : "Mark All Read"}
             </Button>
           )}
         </div>
