@@ -86,6 +86,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           is_premium: boolean | null
@@ -100,6 +101,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_premium?: boolean | null
@@ -114,6 +116,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_premium?: boolean | null
@@ -650,7 +653,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_community_cascade: {
+        Args: { community_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
