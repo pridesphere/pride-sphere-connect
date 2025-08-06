@@ -1,14 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Users, MessageCircle, Plus, Upload } from 'lucide-react';
+import { Search, Users, MessageCircle, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 interface User {
   id: string;
@@ -41,25 +41,31 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
     if (!isOpen || !user) return;
 
     const fetchUsers = async () => {
-      // Get all profiles except current user
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url, pronouns')
-        .neq('user_id', user.id)
-        .ilike('display_name', `%${searchQuery}%`);
+      try {
+        // Get all profiles except current user
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, avatar_url, pronouns')
+          .neq('user_id', user.id)
+          .ilike('display_name', `%${searchQuery}%`)
+          .limit(20);
 
-      if (error) {
-        return;
+        if (error) {
+          toast.error('Failed to load users');
+          return;
+        }
+
+        const users = data?.map(profile => ({
+          id: profile.user_id,
+          display_name: profile.display_name || 'Unknown User',
+          avatar_url: profile.avatar_url,
+          pronouns: profile.pronouns
+        })) || [];
+
+        setAvailableUsers(users);
+      } catch (error) {
+        toast.error('Failed to load users');
       }
-
-      const users = data?.map(profile => ({
-        id: profile.user_id,
-        display_name: profile.display_name || 'Unknown User',
-        avatar_url: profile.avatar_url,
-        pronouns: profile.pronouns
-      })) || [];
-
-      setAvailableUsers(users);
     };
 
     fetchUsers();
@@ -83,7 +89,31 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
     setLoading(true);
     try {
-      // Create conversation
+      // Check if direct conversation already exists (for non-group chats)
+      if (!isGroupChat && selectedUsers.length === 1) {
+        const { data: existingConv } = await supabase
+          .from('conversations')
+          .select('id, conversation_participants!inner(user_id)')
+          .eq('is_group', false);
+
+        // Check if there's already a DM between these two users
+        const existingDM = existingConv?.find(conv => {
+          const participantIds = conv.conversation_participants.map(p => p.user_id);
+          return participantIds.length === 2 && 
+                 participantIds.includes(user.id) && 
+                 participantIds.includes(selectedUsers[0]);
+        });
+
+        if (existingDM) {
+          toast.success('Opening existing conversation!');
+          onChatCreated(existingDM.id);
+          onClose();
+          resetForm();
+          return;
+        }
+      }
+
+      // Create new conversation
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
@@ -126,17 +156,20 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       toast.success(`✨ ${isGroupChat ? 'Group chat' : 'Chat'} created successfully!`);
       onChatCreated(conversation.id);
       onClose();
+      resetForm();
       
-      // Reset form
-      setSelectedUsers([]);
-      setIsGroupChat(false);
-      setGroupName('');
-      setSearchQuery('');
     } catch (error) {
       toast.error('Failed to create conversation');
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setSelectedUsers([]);
+    setIsGroupChat(false);
+    setGroupName('');
+    setSearchQuery('');
   };
 
   const filteredUsers = availableUsers.filter(u => 
@@ -191,7 +224,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
             {filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No users found</p>
+                <p>{searchQuery ? 'No users found' : 'Loading users...'}</p>
               </div>
             ) : (
               filteredUsers.map((u) => (
@@ -207,6 +240,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
                   <Checkbox
                     checked={selectedUsers.includes(u.id)}
                     className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    readOnly
                   />
                   
                   <Avatar className="w-8 h-8">

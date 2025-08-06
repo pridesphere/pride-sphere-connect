@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, MessageCircle, Video, Phone, Image, Smile, Mic, Heart, Rainbow, Flame, Sparkles, Send, Gift, Paperclip } from "lucide-react";
+import { Search, Plus, MessageCircle, Video, Phone, Image, Smile, Mic, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -57,7 +56,6 @@ const Messages = () => {
   const [showCallModal, setShowCallModal] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [showStartChatModal, setShowStartChatModal] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ user_id: string; emoji: string }>>>({});
 
   // Fetch conversations where user is a participant
@@ -332,6 +330,7 @@ const Messages = () => {
                 variant="magical" 
                 size="icon"
                 onClick={() => setShowStartChatModal(true)}
+                aria-label="Start new chat"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -355,6 +354,14 @@ const Messages = () => {
                   <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No conversations yet</p>
                   <p className="text-sm text-muted-foreground">Start connecting with your Pride fam! ✨</p>
+                  <Button 
+                    variant="magical" 
+                    className="mt-4"
+                    onClick={() => setShowStartChatModal(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    🌈 Start New Chat
+                  </Button>
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
@@ -602,7 +609,10 @@ const Messages = () => {
                         Choose a friend or community to start chatting! 
                         All conversations are encrypted and safe. ✨
                       </p>
-                      <Button variant="magical">
+                      <Button 
+                        variant="magical"
+                        onClick={() => setShowStartChatModal(true)}
+                      >
                         <Plus className="w-4 h-4 mr-2" />
                         🌈 Start New Chat
                       </Button>
@@ -622,7 +632,56 @@ const Messages = () => {
         onChatCreated={(conversationId) => {
           setSelectedConversation(conversationId);
           // Refresh conversations list
-          setTimeout(() => window.location.reload(), 500);
+          if (user) {
+            const fetchConversations = async () => {
+              const { data: convData, error: convError } = await supabase
+                .from('conversations')
+                .select('*')
+                .in('id', 
+                  await supabase
+                    .from('conversation_participants')
+                    .select('conversation_id')
+                    .eq('user_id', user.id)
+                    .then(res => res.data?.map(p => p.conversation_id) || [])
+                );
+
+              if (convError) {
+                return;
+              }
+
+              const conversationsWithParticipants = await Promise.all(
+                (convData || []).map(async (conv) => {
+                  const { data: participantData } = await supabase
+                    .from('conversation_participants')
+                    .select(`
+                      user_id,
+                      profiles(display_name, avatar_url, pronouns)
+                    `)
+                    .eq('conversation_id', conv.id);
+
+                  return {
+                    id: conv.id,
+                    name: conv.name,
+                    is_group: conv.is_group,
+                    last_message: "Start a conversation...",
+                    last_message_at: conv.updated_at,
+                    participants: participantData?.map(p => ({
+                      user_id: p.user_id,
+                      profiles: p.profiles ? {
+                        display_name: (p.profiles as any)?.display_name || 'Unknown',
+                        avatar_url: (p.profiles as any)?.avatar_url,
+                        pronouns: (p.profiles as any)?.pronouns
+                      } : undefined
+                    })) || [],
+                    unread_count: 0
+                  };
+                })
+              );
+
+              setConversations(conversationsWithParticipants);
+            };
+            fetchConversations();
+          }
         }}
       />
 
