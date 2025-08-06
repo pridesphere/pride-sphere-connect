@@ -240,7 +240,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
                   <Checkbox
                     checked={selectedUsers.includes(u.id)}
                     className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    readOnly
                   />
                   
                   <Avatar className="w-8 h-8">
