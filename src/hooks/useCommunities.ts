@@ -30,6 +30,7 @@ export const useCommunities = () => {
       const { data, error } = await supabase
         .from('communities')
         .select('*')
+        .is('deleted_at', null) // Only fetch non-deleted communities
         .order('member_count', { ascending: false });
 
       if (error) throw error;

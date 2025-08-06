@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Crown, Lock } from 'lucide-react';
+import { Users, Crown, Lock, Shield } from 'lucide-react';
 
 interface Community {
   id: string;
@@ -20,13 +20,15 @@ interface Community {
 interface CommunityCardProps {
   community: Community;
   isMember?: boolean;
+  userRole?: string; // Add user role prop
   onJoin?: () => void;
   onLeave?: () => void;
 }
 
 const CommunityCard: React.FC<CommunityCardProps> = ({ 
   community, 
-  isMember = false, 
+  isMember = false,
+  userRole,
   onJoin, 
   onLeave 
 }) => {
@@ -47,6 +49,16 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
               <CardTitle className="truncate">{community.name}</CardTitle>
               {community.is_premium && (
                 <Crown className="h-4 w-4 text-amber-500" />
+              )}
+              {userRole === 'owner' && (
+                <Badge variant="default" className="bg-amber-500 text-white text-xs">
+                  👑 Owner
+                </Badge>
+              )}
+              {userRole === 'admin' && (
+                <Badge variant="default" className="bg-blue-500 text-white text-xs">
+                  🛡️ Admin
+                </Badge>
               )}
             </div>
             

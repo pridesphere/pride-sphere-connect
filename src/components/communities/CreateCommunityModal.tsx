@@ -28,6 +28,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
     is_premium: false,
   });
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -71,7 +72,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
     );
   };
 
-  const handleFileUpload = async (file: File | undefined) => {
+  const handleFileSelect = (file: File | undefined) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
@@ -84,6 +85,10 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
       return;
     }
 
+    setBannerFile(file);
+  };
+
+  const handleFileUpload = async (file: File): Promise<string | null> => {
     setUploading(true);
 
     try {
@@ -94,10 +99,10 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
       if (error) throw error;
 
       const publicUrl = `https://hksqnqmvqigjckyhfiig.supabase.co/storage/v1/object/public/community-banners/${data.path}`;
-      setBannerUrl(publicUrl);
-      toast.success("File uploaded successfully!");
+      return publicUrl;
     } catch (error) {
       toast.error("Upload failed. Please try again.");
+      return null;
     } finally {
       setUploading(false);
     }
@@ -119,6 +124,17 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
     setCreating(true);
 
     try {
+      let bannerUrl = null;
+      
+      // Upload banner if selected
+      if (bannerFile) {
+        bannerUrl = await handleFileUpload(bannerFile);
+        if (!bannerUrl) {
+          toast.error("Failed to upload banner image");
+          return;
+        }
+      }
+
       const { data: community, error } = await supabase
         .from('communities')
         .insert({
@@ -129,7 +145,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
           is_premium: formData.is_premium,
           created_by: user.id,
           member_count: 1, // Creator is first member
-          banner_url: bannerUrl || null
+          banner_url: bannerUrl
         })
         .select()
         .single();
@@ -152,6 +168,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
       // Reset form
       setFormData({ name: "", category: "", description: "", is_premium: false });
       setSelectedVibes([]);
+      setBannerFile(null);
       setBannerUrl("");
       
       onOpenChange(false);
@@ -257,14 +274,14 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
               accept="image/png, image/jpeg"
               hidden
               ref={fileInputRef}
-              onChange={(e) => handleFileUpload(e.target.files?.[0])}
+              onChange={(e) => handleFileSelect(e.target.files?.[0])}
             />
             <div
               className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
               onDrop={(e) => {
                 e.preventDefault();
-                handleFileUpload(e.dataTransfer.files[0]);
+                handleFileSelect(e.dataTransfer.files[0]);
               }}
               onDragOver={(e) => e.preventDefault()}
             >

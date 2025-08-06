@@ -19,6 +19,7 @@ const Communities = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
+  const [userRoles, setUserRoles] = useState<{ [key: string]: string }>({});
 
   const categories = ["All", "General", "Support", "Wellness", "Creative", "Literature", "Career"];
 
@@ -34,6 +35,7 @@ const Communities = () => {
       const { data, error } = await supabase
         .from('communities')
         .select('*')
+        .is('deleted_at', null) // Only fetch non-deleted communities
         .order('member_count', { ascending: false });
 
       if (error) throw error;
@@ -55,11 +57,19 @@ const Communities = () => {
     try {
       const { data, error } = await supabase
         .from('community_memberships')
-        .select('community_id')
+        .select('community_id, role')
         .eq('user_id', user.id);
 
       if (error) throw error;
-      setUserMemberships(data?.map(m => m.community_id) || []);
+      
+      const membershipIds = data?.map(m => m.community_id) || [];
+      const rolesMap = data?.reduce((acc, membership) => {
+        acc[membership.community_id] = membership.role;
+        return acc;
+      }, {} as { [key: string]: string }) || {};
+      
+      setUserMemberships(membershipIds);
+      setUserRoles(rolesMap);
     } catch (error) {
       // Silent error handling for memberships
     }
@@ -91,6 +101,7 @@ const Communities = () => {
       });
 
       setUserMemberships(prev => [...prev, communityId]);
+      setUserRoles(prev => ({ ...prev, [communityId]: 'member' }));
       fetchCommunities(); // Refresh to update member count
     } catch (error) {
       toast({
@@ -189,6 +200,16 @@ const Communities = () => {
                         <Lock className="w-4 h-4 text-muted-foreground" />
                       ) : (
                         <Globe className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      {userRoles[community.id] === 'owner' && (
+                        <Badge variant="default" className="bg-amber-500 text-white text-xs">
+                          👑 Owner
+                        </Badge>
+                      )}
+                      {userRoles[community.id] === 'admin' && (
+                        <Badge variant="default" className="bg-blue-500 text-white text-xs">
+                          🛡️ Admin
+                        </Badge>
                       )}
                     </CardTitle>
                     <Badge variant="outline">{community.category || 'General'}</Badge>

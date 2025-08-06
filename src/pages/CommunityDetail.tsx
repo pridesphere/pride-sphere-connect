@@ -40,6 +40,7 @@ const CommunityDetail = () => {
         .from('communities')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null) // Ensure community is not deleted
         .single();
 
       if (error) throw error;
@@ -47,7 +48,7 @@ const CommunityDetail = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to load community",
+        description: "Community not found or has been deleted",
         variant: "destructive"
       });
       navigate('/communities');
@@ -266,18 +267,18 @@ const CommunityDetail = () => {
   const handleDeleteCommunity = async () => {
     if (!user || !id || userRole !== 'owner') return;
 
-    try {
-      // Delete all memberships first
-      await supabase
-        .from('community_memberships')
-        .delete()
-        .eq('community_id', id);
+    // Confirm deletion
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this community? This action cannot be undone and will remove all posts, members, and data."
+    );
+    
+    if (!confirmed) return;
 
-      // Delete the community
-      const { error } = await supabase
-        .from('communities')
-        .delete()
-        .eq('id', id);
+    try {
+      // Use our comprehensive delete function
+      const { error } = await supabase.rpc('delete_community_cascade', {
+        community_id_param: id
+      });
 
       if (error) throw error;
 
