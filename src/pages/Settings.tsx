@@ -7,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTheme } from "next-themes";
 import { useThemeAccent } from "@/hooks/useThemeAccent";
 import Layout from "@/components/layout/Layout";
+import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
+import { DeleteAccountModal } from "@/components/auth/DeleteAccountModal";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -41,14 +42,7 @@ const Settings = () => {
     toast.success("✨ Theme updated! Your colors are shining!");
   };
 
-  const handleDeleteAccount = async () => {
-    // In a real app, you'd implement account deletion
-    toast.error("Account deletion is not implemented yet");
-  };
-
-  const handleChangePassword = () => {
-    toast.info("Password change will be implemented with auth flow");
-  };
+  // Remove placeholder functions since they're now handled in modals
 
   return (
     <Layout>
@@ -89,10 +83,12 @@ const Settings = () => {
                     <Label>Change Password</Label>
                     <p className="text-sm text-muted-foreground">Update your account password</p>
                   </div>
-                  <Button variant="outline" onClick={handleChangePassword}>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Change
-                  </Button>
+                  <ChangePasswordModal>
+                    <Button variant="outline">
+                      <Lock className="w-4 h-4 mr-2" />
+                      Change
+                    </Button>
+                  </ChangePasswordModal>
                 </div>
 
                 <Separator />
@@ -102,29 +98,12 @@ const Settings = () => {
                     <Label className="text-destructive">Delete Account</Label>
                     <p className="text-sm text-muted-foreground">Permanently delete your account and data</p>
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to leave the rainbow?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete your account
-                          and remove your data from our servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Yes, delete my account
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <DeleteAccountModal>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  </DeleteAccountModal>
                 </div>
               </CardContent>
             </Card>
