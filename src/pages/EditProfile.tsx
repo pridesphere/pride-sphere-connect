@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Upload, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,28 @@ const EditProfile = () => {
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    display_name: profile?.display_name || "",
-    pronouns: profile?.pronouns || "",
-    bio: profile?.bio || "",
-    location: profile?.location || "",
-    interests: profile?.interests || [],
+    display_name: "",
+    pronouns: "",
+    bio: "",
+    location: "",
+    interests: [],
   });
 
-  const [selectedVibes, setSelectedVibes] = useState<string[]>(
-    profile?.interests || []
-  );
+  const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
+
+  // Update form data when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || "",
+        pronouns: profile.pronouns || "",
+        bio: profile.bio || "",
+        location: profile.location || "",
+        interests: profile.interests || [],
+      });
+      setSelectedVibes(profile.interests || []);
+    }
+  }, [profile]);
 
   const pronounOptions = [
     "they/them",
@@ -86,20 +98,24 @@ const EditProfile = () => {
   };
 
   const handleSave = async () => {
-    const updates = {
-      ...formData,
-      interests: selectedVibes,
-    };
+    try {
+      const updates = {
+        ...formData,
+        interests: selectedVibes,
+      };
 
-    const result = await updateProfile(updates);
-    
-    if (result?.success) {
-      toast.success("✨ You've updated your sparkle!", {
-        description: "Your profile has been saved successfully!"
-      });
-      navigate("/profile");
-    } else {
-      toast.error("Failed to update profile. Please try again.");
+      const result = await updateProfile(updates);
+      
+      if (result?.success) {
+        toast.success("✨ You've updated your sparkle!", {
+          description: "Your profile has been saved successfully!"
+        });
+        navigate("/profile");
+      } else {
+        toast.error("Failed to update profile. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 

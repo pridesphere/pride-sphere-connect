@@ -150,7 +150,6 @@ const CreatePost = () => {
       setShowFullComposer(false);
       
     } catch (error) {
-      console.error('Error creating post:', error);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsPosting(false);

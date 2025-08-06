@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Share, MoreHorizontal, Sparkles, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,9 +35,15 @@ interface PostCardProps {
 }
 
 const PostCard = ({ post }: PostCardProps) => {
-  const [isLiked, setIsLiked] = useState(post.isLiked || false);
+  const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
+
+  // Update state when post changes
+  useEffect(() => {
+    setIsLiked(post.isLiked || false);
+    setLikesCount(post.likes);
+  }, [post.isLiked, post.likes]);
 
   const handleLike = () => {
     setIsLiked(!isLiked);

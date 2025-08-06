@@ -44,7 +44,6 @@ const Profile = () => {
 
       setProfile(data || {});
     } catch (error) {
-      console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
     }
   };
@@ -83,7 +82,7 @@ const Profile = () => {
         likes: likesCount || 0
       });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      // Error is silently handled
     } finally {
       setLoading(false);
     }
@@ -118,7 +117,7 @@ const Profile = () => {
           <div className="h-64 bg-secondary rounded-lg"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-24 bg-secondary rounded-lg"></div>
+              <div key={`loading-${i}`} className="h-24 bg-secondary rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -299,7 +298,6 @@ const Profile = () => {
           onOpenChange={setCreatePostModalOpen}
           onSuccess={() => {
             // Refresh posts or update profile
-            console.log('Post created from profile');
           }}
         />
       </div>

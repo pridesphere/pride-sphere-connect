@@ -78,7 +78,6 @@ const Messages = () => {
         );
 
       if (convError) {
-        console.error('Error fetching conversations:', convError);
         return;
       }
 
@@ -130,7 +129,6 @@ const Messages = () => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching messages:', error);
         return;
       }
 
@@ -213,7 +211,6 @@ const Messages = () => {
       });
 
     if (error) {
-      console.error('Error sending message:', error);
       toast.error("Failed to send message");
     }
   };
@@ -260,7 +257,6 @@ const Messages = () => {
       }));
 
     } catch (error) {
-      console.error('Error adding reaction:', error);
       toast.error('Failed to add reaction');
     }
   };
@@ -299,7 +295,6 @@ const Messages = () => {
       setCallType(type);
       setShowCallModal(true);
     } catch (error) {
-      console.error('Error starting call:', error);
       toast.error('Failed to start call');
     }
   };

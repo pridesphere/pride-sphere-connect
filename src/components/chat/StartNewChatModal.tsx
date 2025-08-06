@@ -49,7 +49,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         .ilike('display_name', `%${searchQuery}%`);
 
       if (error) {
-        console.error('Error fetching users:', error);
         return;
       }
 
@@ -134,7 +133,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       setGroupName('');
       setSearchQuery('');
     } catch (error) {
-      console.error('Error creating conversation:', error);
       toast.error('Failed to create conversation');
     } finally {
       setLoading(false);

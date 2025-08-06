@@ -121,7 +121,6 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
       onOpenChange(false);
       onSuccess?.(community.id);
     } catch (error: any) {
-      console.error('Error creating community:', error);
       toast.error("Failed to create community. Please try again.");
     } finally {
       setCreating(false);

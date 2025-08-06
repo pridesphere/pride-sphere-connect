@@ -184,7 +184,6 @@ const Communities = () => {
           onOpenChange={setCreateModalOpen}
           onSuccess={(communityId) => {
             // Could navigate to new community page when that's implemented
-            console.log('Community created:', communityId);
           }}
         />
       </div>

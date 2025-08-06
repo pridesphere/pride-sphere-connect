@@ -136,7 +136,6 @@ const CreatePostModal = ({ open, onOpenChange, onSuccess }: CreatePostModalProps
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      console.error('Error creating post:', error);
       toast.error("Failed to create post. Please try again.");
     } finally {
       setCreating(false);

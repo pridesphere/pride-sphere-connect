@@ -36,39 +36,6 @@ const Events = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  useEffect(() => {
-    filterEvents();
-  }, [events, searchQuery, locationFilter, dateFilter]);
-
-  const fetchEvents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .select(`
-          *,
-          event_attendees(count)
-        `)
-        .gte('start_date', new Date().toISOString())
-        .order('start_date', { ascending: true });
-
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load events",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filterEvents = () => {
     let filtered = events;
 
@@ -112,6 +79,39 @@ const Events = () => {
     setFilteredEvents(filtered);
   };
 
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    filterEvents();
+  }, [events, searchQuery, locationFilter, dateFilter, filterEvents]);
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          event_attendees(count)
+        `)
+        .gte('start_date', new Date().toISOString())
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load events",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -144,7 +144,6 @@ const Events = () => {
       });
       fetchEvents();
     } catch (error) {
-      console.error('Error creating event:', error);
       toast({
         title: "Error",
         description: "Failed to create event",
@@ -174,7 +173,6 @@ const Events = () => {
 
       fetchEvents();
     } catch (error) {
-      console.error('Error RSVPing to event:', error);
       toast({
         title: "Error",
         description: "Failed to RSVP to event",
@@ -187,9 +185,9 @@ const Events = () => {
     return (
       <Layout>
         <div className="animate-pulse space-y-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-48 bg-muted rounded-lg"></div>
-          ))}
+            {[...Array(6)].map((_, i) => (
+              <div key={`skeleton-${i}`} className="h-48 bg-muted rounded-lg"></div>
+            ))}
         </div>
       </Layout>
     );
