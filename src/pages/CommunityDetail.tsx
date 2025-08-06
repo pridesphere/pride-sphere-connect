@@ -18,6 +18,7 @@ const CommunityDetail = () => {
   const [community, setCommunity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -54,15 +55,17 @@ const CommunityDetail = () => {
     try {
       const { data, error } = await supabase
         .from('community_memberships')
-        .select('id')
+        .select('role')
         .eq('community_id', id)
         .eq('user_id', user.id)
         .single();
 
       setIsMember(!!data);
+      setUserRole(data?.role || null);
     } catch (error) {
       // No membership found
       setIsMember(false);
+      setUserRole(null);
     }
   };
 
@@ -96,6 +99,40 @@ const CommunityDetail = () => {
   const handleLeave = async () => {
     if (!user || !id) return;
 
+    // Prevent owner from leaving without transferring ownership
+    if (userRole === 'owner') {
+      try {
+        const { data: otherMembers } = await supabase
+          .from('community_memberships')
+          .select('*')
+          .eq('community_id', id)
+          .neq('user_id', user.id);
+
+        if (!otherMembers || otherMembers.length === 0) {
+          toast({
+            title: "Cannot leave community",
+            description: "You must delete the community or assign a new owner before leaving.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        toast({
+          title: "Transfer ownership first",
+          description: "As the owner, you must transfer ownership to another member before leaving.",
+          variant: "destructive"
+        });
+        return;
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to check community members",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('community_memberships')
@@ -106,6 +143,7 @@ const CommunityDetail = () => {
       if (error) throw error;
 
       setIsMember(false);
+      setUserRole(null);
       toast({
         title: "Left community",
         description: "You've left this community"
@@ -114,6 +152,39 @@ const CommunityDetail = () => {
       toast({
         title: "Error",
         description: "Failed to leave community",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCommunity = async () => {
+    if (!user || !id || userRole !== 'owner') return;
+
+    try {
+      // Delete all memberships first
+      await supabase
+        .from('community_memberships')
+        .delete()
+        .eq('community_id', id);
+
+      // Delete the community
+      const { error } = await supabase
+        .from('communities')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Community deleted",
+        description: "The community has been permanently deleted"
+      });
+      
+      navigate('/communities');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete community",
         variant: "destructive"
       });
     }
@@ -180,6 +251,16 @@ const CommunityDetail = () => {
                   ) : (
                     <Globe className="h-6 w-6 text-muted-foreground" />
                   )}
+                  {userRole === 'owner' && (
+                    <Badge variant="default" className="bg-amber-500 text-white">
+                      👑 Owner
+                    </Badge>
+                  )}
+                  {userRole === 'admin' && (
+                    <Badge variant="default" className="bg-blue-500 text-white">
+                      🛡️ Admin
+                    </Badge>
+                  )}
                 </div>
                 
                 <p className="text-muted-foreground">
@@ -222,6 +303,15 @@ const CommunityDetail = () => {
                   <Button variant="magical">
                     🌈 You're a member!
                   </Button>
+                  {userRole === 'owner' && (
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDeleteCommunity}
+                      className="ml-auto"
+                    >
+                      Delete Community
+                    </Button>
+                  )}
                 </>
               ) : (
                 <Button 
