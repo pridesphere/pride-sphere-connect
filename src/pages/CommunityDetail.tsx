@@ -11,6 +11,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import CommunityCreatePost from '@/components/communities/CommunityCreatePost';
 import PostCard from '@/components/feed/PostCard';
+import TransferOwnershipModal from '@/components/communities/TransferOwnershipModal';
 
 const CommunityDetail = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const CommunityDetail = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -115,15 +117,15 @@ const CommunityDetail = () => {
 
         if (!otherMembers || otherMembers.length === 0) {
           toast({
-            title: "Cannot leave community",
-            description: "You must delete the community or assign a new owner before leaving.",
+            title: "You must delete the community or assign a new owner before leaving.",
+            description: "There are no other members to transfer ownership to.",
             variant: "destructive"
           });
           return;
         }
         
         toast({
-          title: "Transfer ownership first",
+          title: "Transfer ownership before leaving.",
           description: "As the owner, you must transfer ownership to another member before leaving.",
           variant: "destructive"
         });
@@ -294,6 +296,12 @@ const CommunityDetail = () => {
     }
   };
 
+  const handleTransferComplete = () => {
+    // Refresh community data and membership status
+    fetchCommunity();
+    checkMembership();
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -408,13 +416,22 @@ const CommunityDetail = () => {
                     🌈 You're a member!
                   </Button>
                   {userRole === 'owner' && (
-                    <Button 
-                      variant="destructive" 
-                      onClick={handleDeleteCommunity}
-                      className="ml-auto"
-                    >
-                      Delete Community
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowTransferModal(true)}
+                        className="ml-2"
+                      >
+                        👑 Transfer Ownership
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleDeleteCommunity}
+                        className="ml-2"
+                      >
+                        Delete Community
+                      </Button>
+                    </>
                   )}
                 </>
               ) : (
@@ -481,6 +498,15 @@ const CommunityDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Transfer Ownership Modal */}
+      <TransferOwnershipModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        communityId={id!}
+        currentUserId={user?.id || ''}
+        onTransferComplete={handleTransferComplete}
+      />
     </Layout>
   );
 };
