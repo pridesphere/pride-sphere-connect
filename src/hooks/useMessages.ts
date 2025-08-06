@@ -22,7 +22,7 @@ export const useMessages = () => {
     if (!user) return;
 
     try {
-      // For now, using mock data since we don't have a proper messages table structure
+      // For now, we'll set to 0 until we have proper message read tracking
       // In production, this would be:
       // const { count, error } = await supabase
       //   .from('messages')
@@ -30,9 +30,8 @@ export const useMessages = () => {
       //   .eq('receiver_id', user.id)
       //   .eq('is_read', false);
 
-      // Mock unread message count
-      const mockUnreadCount = 3;
-      setUnreadCount(mockUnreadCount);
+      // Set to 0 instead of mock data
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error fetching unread message count:', error);
     } finally {

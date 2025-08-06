@@ -34,7 +34,7 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      // For now, create mock notifications since we don't have the notifications table yet
+      // For now, we'll show empty notifications until we have a proper notifications table
       // In production, this would be:
       // const { data: notifications, error } = await supabase
       //   .from('notifications')
@@ -42,35 +42,8 @@ export const useNotifications = () => {
       //   .eq('user_id', user.id)
       //   .order('created_at', { ascending: false });
 
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          user_id: user.id,
-          title: 'Welcome to PrideSphere!',
-          message: 'Complete your profile to connect with the community',
-          link: '/profile/edit',
-          is_read: false,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          user_id: user.id,
-          title: 'New Community Available',
-          message: 'Check out the latest LGBTQ+ communities',
-          link: '/communities',
-          is_read: false,
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          id: '3',
-          user_id: user.id,
-          title: 'Wellness Resources',
-          message: 'New mental health tools have been added',
-          link: '/wellness',
-          is_read: true,
-          created_at: new Date(Date.now() - 172800000).toISOString()
-        }
-      ];
+      // Set to empty array instead of mock data
+      const mockNotifications: Notification[] = [];
 
       setNotifications(mockNotifications);
       setUnreadCount(mockNotifications.filter(n => !n.is_read).length);
