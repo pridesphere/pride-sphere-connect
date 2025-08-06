@@ -19,9 +19,6 @@ interface Conversation {
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
-  user1_id?: string;
-  user2_id?: string;
-  created_by?: string;
   participants?: Array<{
     user_id: string;
     profiles?: {
@@ -120,32 +117,27 @@ const Messages = () => {
                 } : undefined
               })) || [];
             } else {
-              // For direct messages, get user IDs from the conversation
-              const convData = conv as any; // Type assertion since types.ts doesn't have new fields yet
-              const userIds = [convData.user1_id, convData.user2_id].filter(Boolean);
-              
-              if (userIds.length > 0) {
-                const { data: profileData } = await supabase
-                  .from('profiles')
-                  .select('user_id, display_name, avatar_url, pronouns')
-                  .in('user_id', userIds);
+              const userIds = [conv.user1_id, conv.user2_id].filter(Boolean);
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('user_id, display_name, avatar_url, pronouns')
+                .in('user_id', userIds);
 
-                participants = profileData?.map(profile => ({
-                  user_id: profile.user_id,
-                  profiles: {
-                    display_name: profile.display_name || 'Unknown',
-                    avatar_url: profile.avatar_url,
-                    pronouns: profile.pronouns
-                  }
-                })) || [];
-              }
+              participants = profileData?.map(profile => ({
+                user_id: profile.user_id,
+                profiles: {
+                  display_name: profile.display_name || 'Unknown',
+                  avatar_url: profile.avatar_url,
+                  pronouns: profile.pronouns
+                }
+              })) || [];
             }
 
             return {
               id: conv.id,
               name: conv.name,
               is_group: conv.is_group,
-              last_message: (conv as any).last_message || "Start a conversation...",
+              last_message: conv.last_message || "Start a conversation...",
               last_message_at: conv.updated_at,
               participants: participants,
               unread_count: 0
