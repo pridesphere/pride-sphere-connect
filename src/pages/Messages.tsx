@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import CallModal from "@/components/chat/CallModal";
+import StartNewChatModal from "@/components/chat/StartNewChatModal";
 
 interface Conversation {
   id: string;
@@ -19,6 +20,8 @@ interface Conversation {
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
+  user1_id?: string;
+  user2_id?: string;
   participants?: Array<{
     user_id: string;
     profiles?: {
@@ -57,6 +60,7 @@ const Messages = () => {
   const [showCallModal, setShowCallModal] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ user_id: string; emoji: string }>>>({});
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -66,7 +70,6 @@ const Messages = () => {
         const { data: allConversations, error } = await supabase
           .from('conversations')
           .select('*')
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},created_by.eq.${user.id}`)
           .order('updated_at', { ascending: false });
 
         if (error) {
@@ -117,19 +120,22 @@ const Messages = () => {
                 } : undefined
               })) || [];
             } else {
-              const userIds = [conv.user1_id, conv.user2_id].filter(Boolean);
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('user_id, display_name, avatar_url, pronouns')
-                .in('user_id', userIds);
+              // For DM conversations, get participants from conversation_participants table
+              const { data: participantData } = await supabase
+                .from('conversation_participants')
+                .select(`
+                  user_id,
+                  profiles(display_name, avatar_url, pronouns)
+                `)
+                .eq('conversation_id', conv.id);
 
-              participants = profileData?.map(profile => ({
-                user_id: profile.user_id,
-                profiles: {
-                  display_name: profile.display_name || 'Unknown',
-                  avatar_url: profile.avatar_url,
-                  pronouns: profile.pronouns
-                }
+              participants = participantData?.map(p => ({
+                user_id: p.user_id,
+                profiles: p.profiles ? {
+                  display_name: (p.profiles as any)?.display_name || 'Unknown',
+                  avatar_url: (p.profiles as any)?.avatar_url,
+                  pronouns: (p.profiles as any)?.pronouns
+                } : undefined
               })) || [];
             }
 
@@ -137,7 +143,7 @@ const Messages = () => {
               id: conv.id,
               name: conv.name,
               is_group: conv.is_group,
-              last_message: conv.last_message || "Start a conversation...",
+              last_message: "Start a conversation...",
               last_message_at: conv.updated_at,
               participants: participants,
               unread_count: 0
@@ -356,7 +362,7 @@ const Messages = () => {
               <Button 
                 variant="magical" 
                 size="icon"
-                onClick={() => navigate('/messages/new')}
+                onClick={() => setShowNewChatModal(true)}
                 aria-label="Start new chat"
               >
                 <Plus className="w-4 h-4" />
@@ -382,7 +388,7 @@ const Messages = () => {
                   <Button 
                     variant="magical" 
                     className="mt-4"
-                    onClick={() => navigate('/messages/new')}
+                    onClick={() => setShowNewChatModal(true)}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     🌈 Start New Chat
@@ -628,13 +634,13 @@ const Messages = () => {
                         Choose a friend or community to start chatting! 
                         All conversations are encrypted and safe. ✨
                       </p>
-                      <Button 
-                        variant="magical"
-                        onClick={() => navigate('/messages/new')}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        🌈 Start New Chat
-                      </Button>
+                       <Button 
+                         variant="magical"
+                         onClick={() => setShowNewChatModal(true)}
+                       >
+                         <Plus className="w-4 h-4 mr-2" />
+                         🌈 Start New Chat
+                       </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -650,6 +656,15 @@ const Messages = () => {
         callType={callType}
         participantName={selectedConvData ? getConversationName(selectedConvData) : 'Unknown'}
         participantAvatar={undefined}
+      />
+
+      <StartNewChatModal
+        isOpen={showNewChatModal}
+        onClose={() => setShowNewChatModal(false)}
+        onChatCreated={(conversationId) => {
+          setSelectedConversation(conversationId);
+          setShowNewChatModal(false);
+        }}
       />
     </Layout>
   );

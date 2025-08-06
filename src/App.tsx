@@ -15,8 +15,6 @@ import Verify from "./pages/Verify";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./components/auth/AuthProvider";
-import NewChat from "@/pages/NewChat";
-
 const queryClient = new QueryClient();
 
 function App() {
@@ -30,7 +28,6 @@ function App() {
             <Route path="/communities/:id" element={<CommunityDetail />} />
             <Route path="/events" element={<Events />} />
             <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/new" element={<NewChat />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
