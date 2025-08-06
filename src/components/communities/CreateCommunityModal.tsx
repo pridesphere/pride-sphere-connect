@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ interface CreateCommunityModalProps {
 
 const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunityModalProps) => {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -27,6 +28,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
     is_premium: false,
   });
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
+  const [bannerUrl, setBannerUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -69,6 +71,38 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
     );
   };
 
+  const handleFileUpload = async (file: File | undefined) => {
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+      toast.error("Only PNG and JPEG files are allowed");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("community-banners")
+        .upload(`banners/${Date.now()}-${file.name}`, file);
+      
+      if (error) throw error;
+
+      const publicUrl = `https://hksqnqmvqigjckyhfiig.supabase.co/storage/v1/object/public/community-banners/${data.path}`;
+      setBannerUrl(publicUrl);
+      toast.success("File uploaded successfully!");
+    } catch (error) {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -94,7 +128,8 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
           tags: selectedVibes,
           is_premium: formData.is_premium,
           created_by: user.id,
-          member_count: 1 // Creator is first member
+          member_count: 1, // Creator is first member
+          banner_url: bannerUrl || null
         })
         .select()
         .single();
@@ -117,6 +152,7 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
       // Reset form
       setFormData({ name: "", category: "", description: "", is_premium: false });
       setSelectedVibes([]);
+      setBannerUrl("");
       
       onOpenChange(false);
       onSuccess?.(community.id);
@@ -216,15 +252,57 @@ const CreateCommunityModal = ({ open, onOpenChange, onSuccess }: CreateCommunity
             <Label className="text-sm font-medium">
               Upload Icon or Banner (Optional)
             </Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Drag & drop or click to upload
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                PNG, JPG up to 5MB
-              </p>
+            <input
+              type="file"
+              accept="image/png, image/jpeg"
+              hidden
+              ref={fileInputRef}
+              onChange={(e) => handleFileUpload(e.target.files?.[0])}
+            />
+            <div
+              className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleFileUpload(e.dataTransfer.files[0]);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              {uploading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-sm">Uploading...</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag & drop or click to upload
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG up to 5MB
+                  </p>
+                </>
+              )}
             </div>
+            {bannerUrl && (
+              <div className="relative">
+                <img 
+                  src={bannerUrl} 
+                  alt="Banner Preview" 
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => setBannerUrl("")}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* About */}
