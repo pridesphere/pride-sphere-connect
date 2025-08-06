@@ -110,7 +110,11 @@ const EditProfile = () => {
         toast.success("✨ You've updated your sparkle!", {
           description: "Your profile has been saved successfully!"
         });
-        navigate("/profile");
+        try {
+          navigate("/profile");
+        } catch (error) {
+          // Navigation failed, user can manually navigate
+        }
       } else {
         toast.error("Failed to update profile. Please try again.");
       }

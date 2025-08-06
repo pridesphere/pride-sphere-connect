@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
   onJoin, 
   onLeave 
 }) => {
+  const navigate = useNavigate();
   return (
     <Card className="hover:shadow-lg transition-all duration-300 group">
       <CardHeader>
@@ -90,7 +92,11 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
               <Button variant="outline" onClick={onLeave} className="flex-1">
                 Leave Community
               </Button>
-              <Button variant="default" className="flex-1">
+              <Button 
+                variant="default" 
+                className="flex-1"
+                onClick={() => navigate(`/communities/${community.id}`)}
+              >
                 View Community
               </Button>
             </>

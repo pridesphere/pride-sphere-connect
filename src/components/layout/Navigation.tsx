@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import { Search, Menu, MessageCircle, Heart, Users, Sparkles, Moon, Sun, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +19,12 @@ import {
 
 const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+  const { unreadCount } = useNotifications();
 
   const getUserInitials = () => {
     if (profile?.display_name) {
@@ -101,9 +105,19 @@ const Navigation = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={() => navigate('/notifications')}
+              aria-label="View notifications"
+            >
               <Bell className="w-4 h-4" />
-              <Badge className="absolute -top-1 -right-1 w-2 h-2 bg-pride-orange border-0" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs bg-pride-red border-0 text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
             </Button>
 
             <Button
@@ -116,7 +130,7 @@ const Navigation = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="User menu">
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={profile?.avatar_url || ""} />
                     <AvatarFallback className="bg-gradient-pride text-white font-semibold text-sm">
@@ -154,9 +168,23 @@ const Navigation = () => {
 
             {/* Mobile Menu */}
             <div className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Mobile menu">
+                    <Menu className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {navItems.map((item) => (
+                    <DropdownMenuItem key={item.path}>
+                      <Link to={item.path} className="flex items-center w-full">
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

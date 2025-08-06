@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Heart, Sparkles, Moon, Sun, Phone, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const MentalHealthTools = () => {
+  const navigate = useNavigate();
   const [currentMood, setCurrentMood] = useState<string>("");
   const [affirmationIndex, setAffirmationIndex] = useState(0);
 
@@ -139,14 +141,22 @@ const MentalHealthTools = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="float" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button 
+              variant="float" 
+              className="h-auto p-4 flex flex-col items-center space-y-2"
+              onClick={() => navigate('/wellness/meditation')}
+            >
               <Moon className="w-6 h-6" />
               <span className="font-medium">3-Minute Meditation</span>
               <span className="text-xs text-muted-foreground text-center">
                 Guided breathing for inner peace
               </span>
             </Button>
-            <Button variant="connection" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button 
+              variant="connection" 
+              className="h-auto p-4 flex flex-col items-center space-y-2"
+              onClick={() => navigate('/wellness/self-love')}
+            >
               <Sparkles className="w-6 h-6" />
               <span className="font-medium">Self-Love Exercise</span>
               <span className="text-xs text-muted-foreground text-center">
@@ -180,11 +190,19 @@ const MentalHealthTools = () => {
                   <Badge variant="outline">{resource.type}</Badge>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <Button variant="verify" size="sm">
+                  <Button 
+                    variant="verify" 
+                    size="sm"
+                    onClick={() => window.open(`tel:${resource.phone}`, '_self')}
+                  >
                     <Phone className="w-4 h-4 mr-2" />
                     {resource.phone}
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/support/chat')}
+                  >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Chat Online
                   </Button>

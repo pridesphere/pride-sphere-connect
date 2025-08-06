@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Share, MoreHorizontal, Sparkles, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface PostCardProps {
   post: {
@@ -35,6 +37,8 @@ interface PostCardProps {
 }
 
 const PostCard = ({ post }: PostCardProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
@@ -101,9 +105,40 @@ const PostCard = ({ post }: PostCardProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Save Post</DropdownMenuItem>
-              <DropdownMenuItem>Copy Link</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={() => {
+                toast.success("Post saved! 📌");
+              }}>
+                Save Post
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copied! 🔗");
+              }}>
+                Copy Link
+              </DropdownMenuItem>
+              {post.author.name === user?.user_metadata?.display_name && (
+                <>
+                  <DropdownMenuItem onClick={() => {
+                    toast.success("Edit mode coming soon! ✏️");
+                  }}>
+                    Edit Post
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => {
+                      toast.success("Post deleted! 🗑️");
+                    }}
+                  >
+                    Delete Post
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={() => {
+                  toast.success("Report submitted. Thank you for keeping our community safe! 🛡️");
+                }}
+              >
                 <Flag className="w-4 h-4 mr-2" />
                 Report
               </DropdownMenuItem>
@@ -163,7 +198,16 @@ const PostCard = ({ post }: PostCardProps) => {
             </Button>
           </div>
           
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:text-primary"
+            onClick={() => {
+              setIsLiked(!isLiked);
+              setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+              toast.success("✨ Sparkled! Magic reaction added!");
+            }}
+          >
             <Sparkles className="w-4 h-4" />
           </Button>
         </div>

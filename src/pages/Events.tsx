@@ -85,7 +85,7 @@ const Events = () => {
 
   useEffect(() => {
     filterEvents();
-  }, [events, searchQuery, locationFilter, dateFilter, filterEvents]);
+  }, [events, searchQuery, locationFilter, dateFilter]);
 
   const fetchEvents = async () => {
     try {

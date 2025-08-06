@@ -1,0 +1,153 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Bell, Check, CheckCheck, ArrowLeft } from 'lucide-react';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useToast } from '@/hooks/use-toast';
+
+const Notifications = () => {
+  const navigate = useNavigate();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { toast } = useToast();
+
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.is_read) {
+      await markAsRead(notification.id);
+    }
+    
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    await markAllAsRead();
+    toast({
+      title: "All notifications marked as read! ✨",
+      description: "You're all caught up!"
+    });
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="animate-pulse space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={`skeleton-${i}`} className="h-24 bg-muted rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold pride-text flex items-center gap-2">
+              <Bell className="w-8 h-8" />
+              Notifications
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {unreadCount}
+                </Badge>
+              )}
+            </h1>
+            <p className="text-muted-foreground">
+              Stay updated with your Pride community
+            </p>
+          </div>
+          {unreadCount > 0 && (
+            <Button variant="outline" onClick={handleMarkAllRead}>
+              <CheckCheck className="w-4 h-4 mr-2" />
+              Mark All Read
+            </Button>
+          )}
+        </div>
+
+        {/* Notifications List */}
+        {notifications.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
+              <p className="text-muted-foreground">
+                No new notifications at the moment. Keep connecting with your community!
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {notifications.map((notification) => (
+              <Card 
+                key={notification.id}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                  !notification.is_read 
+                    ? 'bg-primary/5 border-primary/20 shadow-glow' 
+                    : 'hover:bg-muted/30'
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">
+                          {notification.title}
+                        </h4>
+                        {!notification.is_read && (
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground text-sm">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(notification.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    
+                    {!notification.is_read && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(notification.id);
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default Notifications;

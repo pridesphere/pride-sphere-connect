@@ -16,6 +16,8 @@ import Settings from "./pages/Settings";
 import Verify from "./pages/Verify";
 import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
+import CommunityDetail from "./pages/CommunityDetail";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -39,11 +41,18 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/communities" element={<Communities />} />
+      <Route path="/communities/:id" element={<CommunityDetail />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/wellness" element={<Wellness />} />
+      <Route path="/wellness/meditation" element={<div>Meditation Coming Soon</div>} />
+      <Route path="/wellness/self-love" element={<div>Self-Love Exercise Coming Soon</div>} />
+      <Route path="/support/chat" element={<div>Live Chat Coming Soon</div>} />
       <Route path="/events" element={<Events />} />
+      <Route path="/events/create" element={<div>Create Event Coming Soon</div>} />
+      <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/edit" element={<EditProfile />} />
+      <Route path="/profile/setup" element={<EditProfile />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/verify" element={<Verify />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

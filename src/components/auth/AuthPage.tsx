@@ -48,6 +48,8 @@ const AuthPage = () => {
         title: "Welcome to PrideSphere! ✨",
         description: "Check your email to verify your account and start connecting!"
       });
+      // Redirect to profile setup after successful signup
+      setTimeout(() => window.location.href = "/profile/setup", 1500);
     }
     setLoading(false);
   };
@@ -69,6 +71,8 @@ const AuthPage = () => {
         title: "Welcome back! 🌈",
         description: "You're now connected to your Pride community!"
       });
+      // Redirect to feed after successful signin
+      setTimeout(() => window.location.href = "/", 1500);
     }
     setLoading(false);
   };
