@@ -23,7 +23,7 @@ const AuthPage = () => {
     apple: true
   });
   
-  const { signIn, signUp, signInWithOAuth } = useAuth();
+  const { signIn, signUp, signInWithOAuth, resetPassword } = useAuth();
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -73,6 +73,35 @@ const AuthPage = () => {
       });
       // Redirect to feed after successful signin
       setTimeout(() => window.location.href = "/", 1500);
+    }
+    setLoading(false);
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await resetPassword(email);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send reset email. Please check the email address.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for instructions to reset your password.",
+      });
     }
     setLoading(false);
   };
@@ -163,6 +192,15 @@ const AuthPage = () => {
                   <Heart className="ml-2 h-4 w-4 group-hover:animate-pulse" />
                 </Button>
               </form>
+
+              <Button 
+                variant="link" 
+                onClick={handlePasswordReset} 
+                className="text-sm w-full text-center"
+                disabled={loading || !email}
+              >
+                Forgot password?
+              </Button>
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
