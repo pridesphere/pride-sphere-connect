@@ -26,7 +26,7 @@ const EditProfile = () => {
     pronouns: "",
     bio: "",
     location: "",
-    interests: [],
+    interests: [] as string[],
   });
 
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);

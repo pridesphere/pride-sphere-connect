@@ -8,13 +8,13 @@ import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import AuthPage from "./components/auth/AuthPage";
 import Index from "./pages/Index";
 import Communities from "./pages/Communities";
-import Messages from "./pages/Messages";
+import MessagesDisabled from "./pages/MessagesDisabled";
 import Wellness from "./pages/Wellness";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import Settings from "./pages/Settings";
 import Verify from "./pages/Verify";
-import Events from "./pages/Events";
+import EventsDisabled from "./pages/EventsDisabled";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import CommunityDetail from "./pages/CommunityDetail";
@@ -49,12 +49,12 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/communities" element={<Communities />} />
       <Route path="/communities/:id" element={<CommunityDetail />} />
-      <Route path="/messages" element={<Messages />} />
+      <Route path="/messages" element={<MessagesDisabled />} />
       <Route path="/wellness" element={<Wellness />} />
       <Route path="/wellness/meditation" element={<div>Meditation Coming Soon</div>} />
       <Route path="/wellness/self-love" element={<div>Self-Love Exercise Coming Soon</div>} />
       <Route path="/support/chat" element={<div>Live Chat Coming Soon</div>} />
-      <Route path="/events" element={<Events />} />
+      <Route path="/events" element={<EventsDisabled />} />
       <Route path="/events/create" element={<div>Create Event Coming Soon</div>} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
