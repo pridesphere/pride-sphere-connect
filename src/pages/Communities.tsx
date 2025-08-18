@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Star, MessageCircle, Lock, Globe } from "lucide-react";
-import CreateCommunityModal from "@/components/communities/CreateCommunityModal";
+// CreateCommunityModal import removed
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -274,15 +274,7 @@ const Communities = () => {
           </CardContent>
         </Card>
 
-        {/* Create Community Modal */}
-        <CreateCommunityModal
-          open={createModalOpen}
-          onOpenChange={setCreateModalOpen}
-          onSuccess={(communityId) => {
-            fetchCommunities();
-            navigate(`/communities/${communityId}`);
-          }}
-        />
+        {/* Create Community Modal removed */}
       </div>
     </Layout>
   );

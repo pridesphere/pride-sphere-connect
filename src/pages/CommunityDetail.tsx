@@ -11,7 +11,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import CommunityCreatePost from '@/components/communities/CommunityCreatePost';
 import PostCard from '@/components/feed/PostCard';
-import TransferOwnershipModal from '@/components/communities/TransferOwnershipModal';
+// TransferOwnershipModal removed
 
 const CommunityDetail = () => {
   const { id } = useParams();
@@ -219,8 +219,8 @@ const CommunityDetail = () => {
           mood: post.mood,
           moodEmoji: getMoodEmoji(post.mood),
           timestamp: formatTimestamp(post.created_at),
-          likes: post.likes_count || 0,
-          comments: post.comments_count || 0,
+          likes: 0,
+          comments: 0,
           shares: 0,
           hashtags: post.hashtags || [],
           isLiked: false
@@ -276,9 +276,11 @@ const CommunityDetail = () => {
 
     try {
       // Use our comprehensive delete function
-      const { error } = await supabase.rpc('delete_community_cascade', {
-        community_id_param: id
-      });
+      // Simplified delete for now - just delete the community
+      const { error } = await supabase
+        .from('communities')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
 
@@ -500,14 +502,7 @@ const CommunityDetail = () => {
         </Card>
       </div>
 
-      {/* Transfer Ownership Modal */}
-      <TransferOwnershipModal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        communityId={id!}
-        currentUserId={user?.id || ''}
-        onTransferComplete={handleTransferComplete}
-      />
+      {/* Transfer Ownership Modal removed */}
     </Layout>
   );
 };
