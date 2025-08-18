@@ -18,6 +18,7 @@ import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import CommunityDetail from "./pages/CommunityDetail";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -33,6 +34,11 @@ const AppRoutes = () => {
     );
   }
 
+  // Allow access to reset password page even when not logged in
+  if (window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />;
+  }
+
   if (!user) {
     return <AuthPage />;
   }
@@ -40,6 +46,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/communities" element={<Communities />} />
       <Route path="/communities/:id" element={<CommunityDetail />} />
       <Route path="/messages" element={<Messages />} />
