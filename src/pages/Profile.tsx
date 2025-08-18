@@ -62,18 +62,11 @@ const Profile = () => {
         .select('*', { count: 'exact' })
         .eq('user_id', authUser?.id);
 
-      // Fetch friends count (accepted friendships)
-      const { count: friendsCount } = await supabase
-        .from('friendships')
-        .select('*', { count: 'exact' })
-        .or(`requester_id.eq.${authUser?.id},addressee_id.eq.${authUser?.id}`)
-        .eq('status', 'accepted');
+      // Set placeholder for friends count (friendships table doesn't exist yet)
+      const friendsCount = 0;
 
-      // Fetch total likes received
-      const { count: likesCount } = await supabase
-        .from('post_likes')
-        .select('*, posts!inner(user_id)', { count: 'exact' })
-        .eq('posts.user_id', authUser?.id);
+      // Set placeholder for likes count (post_likes table doesn't exist yet)
+      const likesCount = 0;
 
       setStats({
         posts: postsCount || 0,
