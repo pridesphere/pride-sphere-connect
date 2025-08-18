@@ -49,12 +49,20 @@ const ResetPasswordPage = () => {
         variant: "destructive",
       });
     } else {
+      // Explicitly sign out after successful password change
+      const { error: signOutError } = await supabase.auth.signOut();
+
+      if (signOutError) {
+        console.error("Sign out failed:", signOutError);
+      }
+
       toast({
         title: "Password Updated! ✨",
-        description: "Your password has been successfully updated. You can now sign in with your new password.",
+        description: "Your password has been successfully updated. Please sign in with your new password.",
       });
-      // Redirect to the main app after successful password update
-      setTimeout(() => window.location.href = "/", 2000);
+      
+      // Redirect to the sign-in page now that the user's session is cleared
+      setTimeout(() => window.location.href = "/auth", 2000);
     }
   };
 
