@@ -56,6 +56,44 @@ export type Database = {
         }
         Relationships: []
       }
+      community_memberships: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          joined_at: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_memberships_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -201,6 +239,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          is_verified: boolean | null
           pronouns: string | null
           updated_at: string
           user_id: string
@@ -212,6 +251,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_verified?: boolean | null
           pronouns?: string | null
           updated_at?: string
           user_id: string
@@ -223,6 +263,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_verified?: boolean | null
           pronouns?: string | null
           updated_at?: string
           user_id?: string

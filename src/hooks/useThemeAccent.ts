@@ -64,16 +64,17 @@ export const useThemeAccent = () => {
     if (!user) return;
 
     const loadTheme = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('theme_accent')
-        .eq('user_id', user.id)
-        .single();
+      // Temporarily disabled until theme_accent column is added
+      // const { data, error } = await supabase
+      //   .from('profiles')
+      //   .select('theme_accent')
+      //   .eq('user_id', user.id)
+      //   .single();
 
-      if (!error && data?.theme_accent) {
-        setThemeAccent(data.theme_accent as ThemeAccent);
-        applyTheme(data.theme_accent as ThemeAccent);
-      }
+      // if (!error && data?.theme_accent) {
+      //   setThemeAccent(data.theme_accent as ThemeAccent);
+      //   applyTheme(data.theme_accent as ThemeAccent);
+      // }
     };
 
     loadTheme();
@@ -98,16 +99,15 @@ export const useThemeAccent = () => {
   const updateThemeAccent = async (newTheme: ThemeAccent) => {
     if (!user) return;
 
-    // Update in database - using any type to bypass TypeScript errors temporarily
-    const { error } = await supabase
-      .from('profiles')
-      .update({ theme_accent: newTheme } as any)
-      .eq('user_id', user.id);
+    // Temporarily disabled until theme_accent column is added
+    // const { error } = await supabase
+    //   .from('profiles')
+    //   .update({ theme_accent: newTheme } as any)
+    //   .eq('user_id', user.id);
 
-    if (!error) {
-      setThemeAccent(newTheme);
-      applyTheme(newTheme);
-    }
+    // For now, just apply the theme locally
+    setThemeAccent(newTheme);
+    applyTheme(newTheme);
   };
 
   return {

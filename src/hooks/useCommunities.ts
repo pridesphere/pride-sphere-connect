@@ -6,7 +6,7 @@ interface Community {
   id: string;
   name: string;
   description: string | null;
-  avatar_url: string | null;
+  banner_url: string | null;
   category: string | null;
   tags: string[] | null;
   is_premium: boolean;
@@ -50,13 +50,13 @@ export const useCommunities = () => {
         .from('community_memberships')
         .insert({
           community_id: communityId,
-          user_id: user.id
+          user_id: user.id,
+          role: 'member'
         });
 
       if (error) throw error;
 
       // Refresh communities to get updated count
-
       fetchCommunities();
       return { success: true };
     } catch (error: any) {
