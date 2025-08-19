@@ -16,33 +16,27 @@ export type Database = {
     Tables: {
       calls: {
         Row: {
-          call_type: string
-          caller_id: string
           conversation_id: string
-          created_at: string
           ended_at: string | null
           id: string
-          started_at: string | null
+          started_at: string
+          started_by: string
           status: string
         }
         Insert: {
-          call_type: string
-          caller_id: string
           conversation_id: string
-          created_at?: string
           ended_at?: string | null
           id?: string
-          started_at?: string | null
+          started_at?: string
+          started_by: string
           status?: string
         }
         Update: {
-          call_type?: string
-          caller_id?: string
           conversation_id?: string
-          created_at?: string
           ended_at?: string | null
           id?: string
-          started_at?: string | null
+          started_at?: string
+          started_by?: string
           status?: string
         }
         Relationships: [
@@ -57,42 +51,36 @@ export type Database = {
       }
       communities: {
         Row: {
-          banner_url: string | null
-          category: string
           created_at: string
           created_by: string
           description: string | null
           id: string
-          is_premium: boolean | null
-          member_count: number | null
+          image_url: string | null
+          is_private: boolean
+          member_count: number
           name: string
-          tags: string[] | null
           updated_at: string
         }
         Insert: {
-          banner_url?: string | null
-          category: string
           created_at?: string
           created_by: string
           description?: string | null
           id?: string
-          is_premium?: boolean | null
-          member_count?: number | null
+          image_url?: string | null
+          is_private?: boolean
+          member_count?: number
           name: string
-          tags?: string[] | null
           updated_at?: string
         }
         Update: {
-          banner_url?: string | null
-          category?: string
           created_at?: string
           created_by?: string
           description?: string | null
           id?: string
-          is_premium?: boolean | null
-          member_count?: number | null
+          image_url?: string | null
+          is_private?: boolean
+          member_count?: number
           name?: string
-          tags?: string[] | null
           updated_at?: string
         }
         Relationships: []
@@ -100,29 +88,23 @@ export type Database = {
       community_memberships: {
         Row: {
           community_id: string
-          created_at: string
           id: string
           joined_at: string
           role: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           community_id: string
-          created_at?: string
           id?: string
           joined_at?: string
           role?: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           community_id?: string
-          created_at?: string
           id?: string
           joined_at?: string
           role?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -169,47 +151,47 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
-          is_group: boolean | null
-          name: string | null
+          is_group: boolean
+          title: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
           id?: string
-          is_group?: boolean | null
-          name?: string | null
+          is_group?: boolean
+          title?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
           id?: string
-          is_group?: boolean | null
-          name?: string | null
+          is_group?: boolean
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
       }
       event_attendees: {
         Row: {
-          created_at: string
           event_id: string
           id: string
+          registered_at: string
           status: string
           user_id: string
         }
         Insert: {
-          created_at?: string
           event_id: string
           id?: string
+          registered_at?: string
           status?: string
           user_id: string
         }
         Update: {
-          created_at?: string
           event_id?: string
           id?: string
+          registered_at?: string
           status?: string
           user_id?: string
         }
@@ -230,6 +212,7 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: string
+          image_url: string | null
           location: string | null
           max_attendees: number | null
           price: number | null
@@ -243,6 +226,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           max_attendees?: number | null
           price?: number | null
@@ -256,6 +240,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           max_attendees?: number | null
           price?: number | null
@@ -303,24 +288,24 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
-          message_type: string | null
-          user_id: string
+          sender_id: string
+          updated_at: string
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string
           id?: string
-          message_type?: string | null
-          user_id: string
+          sender_id: string
+          updated_at?: string
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string
           id?: string
-          message_type?: string | null
-          user_id?: string
+          sender_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -334,40 +319,31 @@ export type Database = {
       }
       posts: {
         Row: {
+          author_id: string
           community_id: string | null
           content: string
           created_at: string
-          hashtags: string[] | null
           id: string
-          is_anonymous: boolean | null
-          media_urls: string[] | null
-          mood: string | null
+          image_url: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
+          author_id: string
           community_id?: string | null
           content: string
           created_at?: string
-          hashtags?: string[] | null
           id?: string
-          is_anonymous?: boolean | null
-          media_urls?: string[] | null
-          mood?: string | null
+          image_url?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
+          author_id?: string
           community_id?: string | null
           content?: string
           created_at?: string
-          hashtags?: string[] | null
           id?: string
-          is_anonymous?: boolean | null
-          media_urls?: string[] | null
-          mood?: string | null
+          image_url?: string | null
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -387,7 +363,6 @@ export type Database = {
           display_name: string | null
           id: string
           interests: string[] | null
-          is_verified: boolean | null
           location: string | null
           pronouns: string | null
           updated_at: string
@@ -401,7 +376,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           interests?: string[] | null
-          is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
           updated_at?: string
@@ -415,7 +389,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           interests?: string[] | null
-          is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
           updated_at?: string
@@ -426,29 +399,29 @@ export type Database = {
       }
       user_settings: {
         Row: {
-          calls_enabled: boolean | null
           created_at: string
           id: string
-          notifications_enabled: boolean | null
-          theme: string | null
+          notifications_enabled: boolean
+          privacy_level: string
+          theme: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          calls_enabled?: boolean | null
           created_at?: string
           id?: string
-          notifications_enabled?: boolean | null
-          theme?: string | null
+          notifications_enabled?: boolean
+          privacy_level?: string
+          theme?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          calls_enabled?: boolean | null
           created_at?: string
           id?: string
-          notifications_enabled?: boolean | null
-          theme?: string | null
+          notifications_enabled?: boolean
+          privacy_level?: string
+          theme?: string
           updated_at?: string
           user_id?: string
         }
