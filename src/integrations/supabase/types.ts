@@ -10,78 +10,120 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
       calls: {
         Row: {
+          call_type: string
+          caller_id: string
           conversation_id: string
+          created_at: string
           ended_at: string | null
           id: string
-          started_at: string
-          started_by: string
+          started_at: string | null
           status: string
         }
         Insert: {
+          call_type: string
+          caller_id: string
           conversation_id: string
+          created_at?: string
           ended_at?: string | null
           id?: string
-          started_at?: string
-          started_by: string
+          started_at?: string | null
           status?: string
         }
         Update: {
+          call_type?: string
+          caller_id?: string
           conversation_id?: string
+          created_at?: string
           ended_at?: string | null
           id?: string
-          started_at?: string
-          started_by?: string
+          started_at?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "calls_conversation_id_fkey"
-            columns: ["conversation_id"]
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: "conversations"
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
       }
       communities: {
         Row: {
-          created_at: string
-          created_by: string
+          avatar_url: string | null
+          banner_url: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
-          image_url: string | null
-          is_private: boolean
-          member_count: number
+          is_premium: boolean | null
+          member_count: number | null
           name: string
-          updated_at: string
+          tags: string[] | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          created_by: string
+          avatar_url?: string | null
+          banner_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
-          image_url?: string | null
-          is_private?: boolean
-          member_count?: number
+          is_premium?: boolean | null
+          member_count?: number | null
           name: string
-          updated_at?: string
+          tags?: string[] | null
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
-          created_by?: string
+          avatar_url?: string | null
+          banner_url?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
-          image_url?: string | null
-          is_private?: boolean
-          member_count?: number
+          is_premium?: boolean | null
+          member_count?: number | null
           name?: string
-          updated_at?: string
+          tags?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -89,22 +131,22 @@ export type Database = {
         Row: {
           community_id: string
           id: string
-          joined_at: string
-          role: string
+          joined_at: string | null
+          role: string | null
           user_id: string
         }
         Insert: {
           community_id: string
           id?: string
-          joined_at?: string
-          role?: string
+          joined_at?: string | null
+          role?: string | null
           user_id: string
         }
         Update: {
           community_id?: string
           id?: string
-          joined_at?: string
-          role?: string
+          joined_at?: string | null
+          role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -121,19 +163,19 @@ export type Database = {
         Row: {
           conversation_id: string
           id: string
-          joined_at: string
+          joined_at: string | null
           user_id: string
         }
         Insert: {
           conversation_id: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
           user_id: string
         }
         Update: {
           conversation_id?: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -148,51 +190,51 @@ export type Database = {
       }
       conversations: {
         Row: {
-          created_at: string
-          created_by: string
+          created_at: string | null
+          created_by: string | null
           id: string
-          is_group: boolean
-          title: string | null
-          updated_at: string
+          is_group: boolean | null
+          name: string | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          created_by: string
+          created_at?: string | null
+          created_by?: string | null
           id?: string
-          is_group?: boolean
-          title?: string | null
-          updated_at?: string
+          is_group?: boolean | null
+          name?: string | null
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
-          created_by?: string
+          created_at?: string | null
+          created_by?: string | null
           id?: string
-          is_group?: boolean
-          title?: string | null
-          updated_at?: string
+          is_group?: boolean | null
+          name?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       event_attendees: {
         Row: {
+          created_at: string | null
           event_id: string
           id: string
-          registered_at: string
-          status: string
+          status: string | null
           user_id: string
         }
         Insert: {
+          created_at?: string | null
           event_id: string
           id?: string
-          registered_at?: string
-          status?: string
+          status?: string | null
           user_id: string
         }
         Update: {
+          created_at?: string | null
           event_id?: string
           id?: string
-          registered_at?: string
-          status?: string
+          status?: string | null
           user_id?: string
         }
         Relationships: [
@@ -207,46 +249,109 @@ export type Database = {
       }
       events: {
         Row: {
-          created_at: string
-          created_by: string
+          created_at: string | null
+          created_by: string | null
           description: string | null
           end_date: string | null
           id: string
           image_url: string | null
+          latitude: number | null
           location: string | null
+          longitude: number | null
           max_attendees: number | null
           price: number | null
           start_date: string
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          created_by: string
+          created_at?: string | null
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
           image_url?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           max_attendees?: number | null
           price?: number | null
           start_date: string
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
-          created_by?: string
+          created_at?: string | null
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
           image_url?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           max_attendees?: number | null
           price?: number | null
           start_date?: string
           title?: string
-          updated_at?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string | null
+          id: string
+          requester_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string | null
+          id?: string
+          requester_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string | null
+          id?: string
+          requester_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      membership_tiers: {
+        Row: {
+          created_at: string | null
+          features: string[] | null
+          id: string
+          max_communities: number | null
+          name: string
+          price_monthly: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          features?: string[] | null
+          id?: string
+          max_communities?: number | null
+          name: string
+          price_monthly: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          features?: string[] | null
+          id?: string
+          max_communities?: number | null
+          name?: string
+          price_monthly?: number
+          stripe_price_id?: string | null
         }
         Relationships: []
       }
@@ -272,40 +377,35 @@ export type Database = {
           message_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_reactions_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
           content: string
           conversation_id: string
-          created_at: string
+          created_at: string | null
           id: string
-          sender_id: string
-          updated_at: string
+          media_url: string | null
+          message_type: string | null
+          user_id: string
         }
         Insert: {
           content: string
           conversation_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
-          sender_id: string
-          updated_at?: string
+          media_url?: string | null
+          message_type?: string | null
+          user_id: string
         }
         Update: {
           content?: string
           conversation_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
-          sender_id?: string
-          updated_at?: string
+          media_url?: string | null
+          message_type?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -317,33 +417,101 @@ export type Database = {
           },
         ]
       }
-      posts: {
+      mood_entries: {
         Row: {
-          author_id: string
-          community_id: string | null
-          content: string
-          created_at: string
+          created_at: string | null
           id: string
-          image_url: string | null
-          updated_at: string
+          mood_score: number | null
+          notes: string | null
+          user_id: string
         }
         Insert: {
-          author_id: string
-          community_id?: string | null
-          content: string
-          created_at?: string
+          created_at?: string | null
           id?: string
-          image_url?: string | null
-          updated_at?: string
+          mood_score?: number | null
+          notes?: string | null
+          user_id: string
         }
         Update: {
-          author_id?: string
+          created_at?: string | null
+          id?: string
+          mood_score?: number | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          comments_count: number | null
+          community_id: string | null
+          content: string
+          created_at: string | null
+          hashtags: string[] | null
+          id: string
+          is_anonymous: boolean | null
+          likes_count: number | null
+          media_urls: string[] | null
+          mood: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comments_count?: number | null
+          community_id?: string | null
+          content: string
+          created_at?: string | null
+          hashtags?: string[] | null
+          id?: string
+          is_anonymous?: boolean | null
+          likes_count?: number | null
+          media_urls?: string[] | null
+          mood?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comments_count?: number | null
           community_id?: string | null
           content?: string
-          created_at?: string
+          created_at?: string | null
+          hashtags?: string[] | null
           id?: string
-          image_url?: string | null
-          updated_at?: string
+          is_anonymous?: boolean | null
+          likes_count?: number | null
+          media_urls?: string[] | null
+          mood?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -359,69 +527,122 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
-          created_at: string
+          created_at: string | null
           display_name: string | null
           id: string
           interests: string[] | null
+          is_verified: boolean | null
           location: string | null
           pronouns: string | null
-          updated_at: string
+          theme_accent: string | null
+          updated_at: string | null
           user_id: string
           username: string | null
+          verification_status: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
-          created_at?: string
+          created_at?: string | null
           display_name?: string | null
           id?: string
           interests?: string[] | null
+          is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
-          updated_at?: string
+          theme_accent?: string | null
+          updated_at?: string | null
           user_id: string
           username?: string | null
+          verification_status?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
-          created_at?: string
+          created_at?: string | null
           display_name?: string | null
           id?: string
           interests?: string[] | null
+          is_verified?: boolean | null
           location?: string | null
           pronouns?: string | null
-          updated_at?: string
+          theme_accent?: string | null
+          updated_at?: string | null
           user_id?: string
           username?: string | null
+          verification_status?: string | null
         }
         Relationships: []
       }
+      user_memberships: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          membership_tier_id: string
+          status: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          membership_tier_id: string
+          status?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          membership_tier_id?: string
+          status?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_membership_tier_id_fkey"
+            columns: ["membership_tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
+          calls_enabled: boolean | null
           created_at: string
+          dms_enabled: boolean | null
           id: string
-          notifications_enabled: boolean
-          privacy_level: string
-          theme: string
+          profile_visibility: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          calls_enabled?: boolean | null
           created_at?: string
+          dms_enabled?: boolean | null
           id?: string
-          notifications_enabled?: boolean
-          privacy_level?: string
-          theme?: string
+          profile_visibility?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          calls_enabled?: boolean | null
           created_at?: string
+          dms_enabled?: boolean | null
           id?: string
-          notifications_enabled?: boolean
-          privacy_level?: string
-          theme?: string
+          profile_visibility?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -432,7 +653,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_community_cascade: {
+        Args: { community_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
