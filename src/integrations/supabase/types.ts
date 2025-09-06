@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_members: {
+        Row: {
+          blocked_at: string
+          blocked_by: string
+          community_id: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by: string
+          community_id: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string
+          community_id?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           call_type: string
@@ -653,6 +680,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      block_community_member: {
+        Args: {
+          community_id_param: string
+          reason_param?: string
+          user_id_param: string
+        }
+        Returns: undefined
+      }
       create_community_with_owner: {
         Args: {
           community_avatar_url?: string
@@ -667,6 +702,10 @@ export type Database = {
       }
       delete_community_cascade: {
         Args: { community_id_param: string }
+        Returns: undefined
+      }
+      delete_user_posts_in_community: {
+        Args: { community_id_param: string; user_id_param: string }
         Returns: undefined
       }
       transfer_community_ownership: {

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Users, Crown, Globe, Lock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Users, Crown, Globe, Lock, Shield, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,8 @@ import PostCard from '@/components/feed/PostCard';
 import { TransferOwnershipModal } from '@/components/communities/TransferOwnershipModal';
 import { DeleteCommunityModal } from '@/components/communities/DeleteCommunityModal';
 import { OwnerLeaveModal } from '@/components/communities/OwnerLeaveModal';
+import { AdminDashboard } from '@/components/communities/AdminDashboard';
+import { AdminPostActions } from '@/components/communities/AdminPostActions';
 import { useCommunities } from '@/hooks/useCommunities';
 
 const CommunityDetail = () => {
@@ -30,6 +33,7 @@ const CommunityDetail = () => {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOwnerLeaveModal, setShowOwnerLeaveModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("posts");
   
   const { leaveCommunity } = useCommunities();
 
@@ -180,30 +184,31 @@ const CommunityDetail = () => {
         profileMap.set(profile.user_id, profile);
       });
       
-      // Transform the data to match PostCard props
-      const transformedPosts = postsData.map(post => {
-        const profile = profileMap.get(post.user_id);
-        
-        return {
-          id: post.id,
-          author: {
-            name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || "Unknown User"),
-            pronouns: post.is_anonymous ? "" : (profile?.pronouns || ""),
-            verified: profile?.is_verified || false,
-            avatar: post.is_anonymous ? undefined : profile?.avatar_url,
-            isAnonymous: post.is_anonymous
-          },
-          content: post.content,
-          mood: post.mood,
-          moodEmoji: getMoodEmoji(post.mood),
-          timestamp: formatTimestamp(post.created_at),
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          hashtags: post.hashtags || [],
-          isLiked: false
-        };
-      });
+        // Transform the data to match PostCard props
+        const transformedPosts = postsData.map(post => {
+          const profile = profileMap.get(post.user_id);
+          
+          return {
+            id: post.id,
+            originalId: post.id, // Keep original ID for admin actions
+            author: {
+              name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || "Unknown User"),
+              pronouns: post.is_anonymous ? "" : (profile?.pronouns || ""),
+              verified: profile?.is_verified || false,
+              avatar: post.is_anonymous ? undefined : profile?.avatar_url,
+              isAnonymous: post.is_anonymous
+            },
+            content: post.content,
+            mood: post.mood,
+            moodEmoji: getMoodEmoji(post.mood),
+            timestamp: formatTimestamp(post.created_at),
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            hashtags: post.hashtags || [],
+            isLiked: false
+          };
+        });
       
       setPosts(transformedPosts);
     } catch (error) {
@@ -241,6 +246,31 @@ const CommunityDetail = () => {
   const handlePostCreated = () => {
     fetchCommunityPosts();
   };
+
+  // Set up real-time subscription for posts
+  useEffect(() => {
+    if (!id) return;
+
+    const postsChannel = supabase
+      .channel(`community_posts:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `community_id=eq.${id}`
+        },
+        () => {
+          fetchCommunityPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+    };
+  }, [id]);
 
   const handleDeleteCommunity = () => {
     // Show the delete modal instead of handling deletion directly
@@ -408,52 +438,96 @@ const CommunityDetail = () => {
         {/* Community Content */}
         {isMember && (
           <div className="space-y-6">
-            <CommunityCreatePost 
-              communityId={id!} 
-              onPostCreated={handlePostCreated}
-            />
+            {userRole === 'owner' ? (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="posts" className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    Posts
+                  </TabsTrigger>
+                  <TabsTrigger value="admin" className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Admin Dashboard
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="posts" className="mt-6">
+                  <CommunityCreatePost 
+                    communityId={id!} 
+                    onPostCreated={handlePostCreated}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="admin" className="mt-6">
+                  <AdminDashboard 
+                    communityId={id!} 
+                    communityName={community.name}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <CommunityCreatePost 
+                communityId={id!} 
+                onPostCreated={handlePostCreated}
+              />
+            )}
           </div>
         )}
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Community Posts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {postsLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-muted rounded-full"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-muted rounded w-24"></div>
-                        <div className="h-3 bg-muted rounded w-16"></div>
+        {/* Community Posts - Show only when not in admin dashboard */}
+        {(activeTab === "posts" || userRole !== 'owner') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Community Posts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {postsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-muted rounded-full"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded w-24"></div>
+                          <div className="h-3 bg-muted rounded w-16"></div>
+                        </div>
                       </div>
+                      <div className="h-20 bg-muted rounded"></div>
                     </div>
-                    <div className="h-20 bg-muted rounded"></div>
-                  </div>
-                ))}
-              </div>
-            ) : posts.length > 0 ? (
-              <div className="space-y-6">
-                {posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
-                <p className="text-muted-foreground">
-                  {isMember 
-                    ? "Be the first to share something magical in this community!" 
-                    : "Join this community to see and create posts."}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : posts.length > 0 ? (
+                <div className="space-y-6">
+                  {posts.map((post) => (
+                    <div key={post.id} className="relative">
+                      <PostCard post={post} />
+                      {userRole === 'owner' && (
+                        <div className="absolute top-2 right-2">
+                          <AdminPostActions
+                            postId={post.originalId}
+                            communityId={id!}
+                            authorName={post.author.name}
+                            onPostDeleted={handlePostCreated}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+                  <p className="text-muted-foreground">
+                    {isMember 
+                      ? "Be the first to share something magical in this community!" 
+                      : "Join this community to see and create posts."}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
         {/* Modals */}
         <TransferOwnershipModal
           open={showTransferModal}
