@@ -28,6 +28,30 @@ const Communities = () => {
     if (user) {
       fetchUserMemberships();
     }
+
+    // Subscribe to community changes to refresh list when communities are deleted
+    const subscription = supabase
+      .channel('communities_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'communities'
+        },
+        (payload) => {
+          console.log('Community change detected:', payload);
+          fetchCommunities();
+          if (user) {
+            fetchUserMemberships();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   const fetchCommunities = async () => {
@@ -35,6 +59,7 @@ const Communities = () => {
       const { data, error } = await supabase
         .from('communities')
         .select('*')
+        .is('deleted_at', null) // Only fetch non-deleted communities
         .order('member_count', { ascending: false });
 
       if (error) throw error;

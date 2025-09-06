@@ -242,39 +242,9 @@ const CommunityDetail = () => {
     fetchCommunityPosts();
   };
 
-  const handleDeleteCommunity = async () => {
-    if (!user || !id || userRole !== 'owner') return;
-
-    // Confirm deletion
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this community? This action cannot be undone and will remove all posts, members, and data."
-    );
-    
-    if (!confirmed) return;
-
-    try {
-      // Use our comprehensive delete function
-      // Simplified delete for now - just delete the community
-      const { error } = await supabase
-        .from('communities')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Community deleted",
-        description: "The community has been permanently deleted"
-      });
-      
-      navigate('/communities');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete community",
-        variant: "destructive"
-      });
-    }
+  const handleDeleteCommunity = () => {
+    // Show the delete modal instead of handling deletion directly
+    setShowDeleteModal(true);
   };
 
   const handleTransferComplete = () => {
@@ -390,27 +360,33 @@ const CommunityDetail = () => {
             <div className="flex space-x-4">
               {isMember ? (
                 <>
-                  <Button variant="outline" onClick={handleLeave}>
-                    Leave Community
-                  </Button>
-                  <Button variant="magical">
-                    🌈 You're a member!
-                  </Button>
-                  {userRole === 'owner' && (
+                  {userRole === 'owner' ? (
+                    // Owner-specific buttons - no Leave Community option
                     <>
+                      <Button variant="magical" className="flex-1">
+                        👑 Community Owner
+                      </Button>
                       <Button 
                         variant="outline" 
                         onClick={() => setShowTransferModal(true)}
-                        className="ml-2"
                       >
-                        👑 Transfer Ownership
+                        Transfer Ownership
                       </Button>
                       <Button 
                         variant="destructive" 
                         onClick={() => setShowDeleteModal(true)}
-                        className="ml-2"
                       >
                         Delete Community
+                      </Button>
+                    </>
+                  ) : (
+                    // Regular member buttons
+                    <>
+                      <Button variant="outline" onClick={handleLeave}>
+                        Leave Community
+                      </Button>
+                      <Button variant="magical">
+                        🌈 You're a member!
                       </Button>
                     </>
                   )}
