@@ -191,8 +191,9 @@ const CommunityDetail = () => {
           return {
             id: post.id,
             originalId: post.id, // Keep original ID for admin actions
+            user_id: post.user_id, // Include user_id for profile navigation and admin actions
             author: {
-              name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || "Unknown User"),
+              name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || profile?.username || "Unknown User"),
               pronouns: post.is_anonymous ? "" : (profile?.pronouns || ""),
               verified: profile?.is_verified || false,
               avatar: post.is_anonymous ? undefined : profile?.avatar_url,
@@ -499,19 +500,14 @@ const CommunityDetail = () => {
               ) : posts.length > 0 ? (
                 <div className="space-y-6">
                   {posts.map((post) => (
-                    <div key={post.id} className="relative">
-                      <PostCard post={post} />
-                      {userRole === 'owner' && (
-                        <div className="absolute top-2 right-2">
-                          <AdminPostActions
-                            postId={post.originalId}
-                            communityId={id!}
-                            authorName={post.author.name}
-                            onPostDeleted={handlePostCreated}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    <PostCard 
+                      key={post.id} 
+                      post={post}
+                      communityId={id}
+                      userRole={userRole}
+                      isOwner={userRole === 'owner'}
+                      onPostDeleted={handlePostCreated}
+                    />
                   ))}
                 </div>
               ) : (
