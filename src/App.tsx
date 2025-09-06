@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import AuthPage from "./components/auth/AuthPage";
 import Index from "./pages/Index";
 import Communities from "./pages/Communities";
-import MessagesDisabled from "./pages/MessagesDisabled";
+import Messages from "./pages/Messages";
 import Wellness from "./pages/Wellness";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
@@ -49,7 +49,7 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/communities" element={<Communities />} />
       <Route path="/communities/:id" element={<CommunityDetail />} />
-      <Route path="/messages" element={<MessagesDisabled />} />
+      <Route path="/messages" element={<Messages />} />
       <Route path="/wellness" element={<Wellness />} />
       <Route path="/wellness/meditation" element={<div>Meditation Coming Soon</div>} />
       <Route path="/wellness/self-love" element={<div>Self-Love Exercise Coming Soon</div>} />
