@@ -116,7 +116,15 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
   };
 
   const handlePost = async () => {
-    if (!postContent.trim() || !user) return;
+    if (!postContent.trim()) {
+      toast.error("Please write something to share!");
+      return;
+    }
+    
+    if (!user) {
+      toast.error("You must be logged in to create a post");
+      return;
+    }
     
     setIsPosting(true);
     
@@ -128,20 +136,23 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
         mediaUrls = mediaFiles.map(file => file.name);
       }
 
-      // Create post in database with community_id
+      // Create post in database with community_id and proper validation
       const { error } = await supabase
         .from('posts')
         .insert({
           content: postContent,
-          user_id: user.id,
+          user_id: user.id, // This is now required by DB constraint
           community_id: communityId,
-          mood: selectedMood,
+          mood: selectedMood || null,
           is_anonymous: isAnonymous,
-          hashtags: hashtags,
+          hashtags: hashtags.length > 0 ? hashtags : null,
           media_urls: mediaUrls.length > 0 ? mediaUrls : null
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Post creation error:', error);
+        throw new Error(error.message || 'Failed to create post');
+      }
 
       toast.success("✨ Your story is now shining in the community!", {
         description: "Your magical post is live!"
@@ -158,8 +169,9 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
       // Notify parent component
       onPostCreated();
       
-    } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error: any) {
+      console.error('Error creating post:', error);
+      toast.error(error.message || "Something went wrong. Please try again.");
     } finally {
       setIsPosting(false);
     }

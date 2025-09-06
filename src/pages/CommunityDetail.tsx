@@ -172,32 +172,55 @@ const CommunityDetail = () => {
           .map(post => post.user_id)
       )];
 
-      // Fetch profiles for these users
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, username, avatar_url, is_verified, pronouns')
-        .in('user_id', userIds);
+      // Fetch profiles for these users if there are any
+      let profileMap = new Map();
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username, avatar_url, is_verified, pronouns')
+          .in('user_id', userIds);
 
-      // Create a map of user_id to profile
-      const profileMap = new Map();
-      profilesData?.forEach(profile => {
-        profileMap.set(profile.user_id, profile);
-      });
+        if (profilesError) {
+          console.warn('Error fetching profiles:', profilesError);
+          // Continue with empty profile map rather than failing completely
+        } else if (profilesData) {
+          // Create a map of user_id to profile
+          profilesData.forEach(profile => {
+            profileMap.set(profile.user_id, profile);
+          });
+        }
+      }
       
         // Transform the data to match PostCard props
         const transformedPosts = postsData.map(post => {
           const profile = profileMap.get(post.user_id);
+          
+          // Determine user display info
+          let displayName = "Unknown User";
+          let isDeleted = false;
+          
+          if (post.is_anonymous) {
+            displayName = "Anonymous Rainbow";
+          } else if (profile) {
+            // User has a profile - use display_name, fallback to username
+            displayName = profile.display_name || profile.username || "Unknown User";
+          } else if (post.user_id && userIds.includes(post.user_id)) {
+            // User ID exists but no profile found - account likely deleted
+            displayName = "Deleted User";
+            isDeleted = true;
+          }
           
           return {
             id: post.id,
             originalId: post.id, // Keep original ID for admin actions
             user_id: post.user_id, // Include user_id for profile navigation and admin actions
             author: {
-              name: post.is_anonymous ? "Anonymous Rainbow" : (profile?.display_name || profile?.username || "Unknown User"),
+              name: displayName,
               pronouns: post.is_anonymous ? "" : (profile?.pronouns || ""),
               verified: profile?.is_verified || false,
               avatar: post.is_anonymous ? undefined : profile?.avatar_url,
-              isAnonymous: post.is_anonymous
+              isAnonymous: post.is_anonymous,
+              isDeleted: isDeleted
             },
             content: post.content,
             mood: post.mood,
@@ -214,6 +237,11 @@ const CommunityDetail = () => {
       setPosts(transformedPosts);
     } catch (error) {
       console.error('Error fetching community posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load community posts. Please try refreshing.",
+        variant: "destructive"
+      });
     } finally {
       setPostsLoading(false);
     }

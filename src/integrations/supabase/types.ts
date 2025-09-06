@@ -510,7 +510,7 @@ export type Database = {
           media_urls: string[] | null
           mood: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           comments_count?: number | null
@@ -524,7 +524,7 @@ export type Database = {
           media_urls?: string[] | null
           mood?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           comments_count?: number | null
@@ -538,7 +538,7 @@ export type Database = {
           media_urls?: string[] | null
           mood?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

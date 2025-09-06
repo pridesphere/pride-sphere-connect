@@ -37,6 +37,7 @@ interface PostCardProps {
       avatar?: string;
       verified: boolean;
       isAnonymous?: boolean;
+      isDeleted?: boolean; // For deleted users
     };
     content: string;
     mood?: string;
@@ -128,14 +129,14 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
   };
 
   const handleAuthorClick = () => {
-    if (!post.author.isAnonymous && post.user_id) {
+    if (!post.author.isAnonymous && !post.author.isDeleted && post.user_id) {
       navigate(`/profile/${post.user_id}`);
     }
   };
 
   const isCurrentUserPost = user?.id === post.user_id;
   const canDeletePost = isCurrentUserPost || (isOwner && communityId);
-  const canBlockMember = isOwner && communityId && !isCurrentUserPost && !post.author.isAnonymous;
+  const canBlockMember = isOwner && communityId && !isCurrentUserPost && !post.author.isAnonymous && !post.author.isDeleted;
 
   return (
     <Card className="mb-6 shadow-card hover:shadow-magical transition-all duration-300">
@@ -144,23 +145,33 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
         <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
             <Avatar 
-              className={`w-10 h-10 ${!post.author.isAnonymous ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              className={`w-10 h-10 ${!post.author.isAnonymous && !post.author.isDeleted ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
               onClick={handleAuthorClick}
             >
               <AvatarImage src={post.author.avatar} />
               <AvatarFallback className="bg-gradient-pride text-white font-semibold">
-                {post.author.isAnonymous ? "🌈" : post.author.name.charAt(0)}
+                {post.author.isAnonymous 
+                  ? "🌈" 
+                  : post.author.isDeleted 
+                    ? "👤" 
+                    : post.author.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <div>
               <div className="flex items-center space-x-2">
                 <p 
-                  className={`font-semibold ${!post.author.isAnonymous ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                  className={`font-semibold ${
+                    !post.author.isAnonymous && !post.author.isDeleted 
+                      ? 'cursor-pointer hover:text-primary transition-colors' 
+                      : post.author.isDeleted
+                        ? 'text-muted-foreground'
+                        : ''
+                  }`}
                   onClick={handleAuthorClick}
                 >
-                  {post.author.isAnonymous ? "Anonymous Rainbow" : post.author.name}
+                  {post.author.name}
                 </p>
-                {post.author.verified && (
+                {post.author.verified && !post.author.isDeleted && (
                   <span className="text-success text-sm">✅</span>
                 )}
                 {post.mood && (
@@ -170,7 +181,7 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                {!post.author.isAnonymous && post.author.pronouns && `(${post.author.pronouns})`} • {post.timestamp}
+                {!post.author.isAnonymous && !post.author.isDeleted && post.author.pronouns && `(${post.author.pronouns})`} • {post.timestamp}
               </p>
             </div>
           </div>
