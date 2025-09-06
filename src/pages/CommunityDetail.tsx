@@ -196,18 +196,21 @@ const CommunityDetail = () => {
           const profile = profileMap.get(post.user_id);
           
           // Determine user display info
-          let displayName = "Unknown User";
+          let displayName = "User";
           let isDeleted = false;
           
           if (post.is_anonymous) {
             displayName = "Anonymous Rainbow";
           } else if (profile) {
-            // User has a profile - use display_name, fallback to username
-            displayName = profile.display_name || profile.username || "Unknown User";
+            // User has a profile - use display_name, fallback to username, fallback to "User"
+            displayName = profile.display_name || profile.username || `User`;
           } else if (post.user_id && userIds.includes(post.user_id)) {
             // User ID exists but no profile found - account likely deleted
             displayName = "Deleted User";
             isDeleted = true;
+          } else if (post.user_id) {
+            // User ID exists but wasn't included in userIds (shouldn't happen with current logic)
+            displayName = "User";
           }
           
           return {
