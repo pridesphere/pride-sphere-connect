@@ -140,16 +140,6 @@ const Communities = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Connect with amazing communities where you belong. Every space is moderated and safe. ✨
           </p>
-          {user && (
-            <Button 
-              variant="magical" 
-              size="lg"
-              onClick={() => setCreateModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create New Community
-            </Button>
-          )}
         </div>
 
         {/* Category Filter */}
