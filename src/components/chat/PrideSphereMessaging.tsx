@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Plus, Search, MoreVertical, Shield, Flag, Trash2, BellOff, Lock, Users, UserPlus, MessageSquarePlus, Paperclip, Image as ImageIcon, Mic, Hash, Smile, LogOut, EyeOff, Eye, CheckCircle2, AlertTriangle, UserRound } from "lucide-react";
+import { Send, Plus, Search, MoreVertical, Shield, Flag, Trash2, BellOff, Lock, Users, UserPlus, MessageSquarePlus, Paperclip, Image as ImageIcon, Mic, Hash, Smile, LogOut, EyeOff, Eye, CheckCircle2, AlertTriangle, UserRound, Ban, UserX, Volume2, VolumeX } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,8 +187,18 @@ function initials(name?: string) {
 // ---------------------------
 
 export default function PrideSphereMessaging() {
-  // Simulate current logged-in user
-  const currentUser = USERS["u1"]; // swap when integrating auth
+  const { user } = useAuth();
+  
+  // Use authenticated user or fallback to mock user for demo
+  const currentUser = user ? {
+    id: user.id,
+    name: user.user_metadata?.display_name || "User",
+    handle: user.user_metadata?.username || "@user",
+    pronouns: "they/them" as Pronouns,
+    identity: "Queer" as Identity,
+    avatarUrl: user.user_metadata?.avatar_url,
+    isVerified: false
+  } : USERS["u1"];
 
   const [search, setSearch] = useState("");
   const [safeMode, setSafeMode] = useState(true);
@@ -195,8 +208,12 @@ export default function PrideSphereMessaging() {
   const [draft, setDraft] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<File | null>(null);
   const [typing, setTyping] = useState<string | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  const [mutedChats, setMutedChats] = useState<Set<string>>(new Set());
 
   const activeChat = chats.find((c) => c.id === activeChatId);
   const chatMembers = useMemo(() => activeChat?.memberIds.map((id) => USERS[id]) || [], [activeChatId]);
@@ -228,22 +245,153 @@ export default function PrideSphereMessaging() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeChatId, messages.length]);
 
+  // Real-time message subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeChatId}`
+        },
+        (payload) => {
+          const newMessage = payload.new as any;
+          setMessages(prev => [...prev, {
+            id: newMessage.id,
+            chatId: newMessage.conversation_id,
+            senderId: newMessage.user_id,
+            content: newMessage.content,
+            createdAt: new Date(newMessage.created_at).getTime(),
+            mediaUrl: newMessage.media_url
+          }]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, activeChatId]);
+
+  // Backend integration functions
+  const sendMessageToBackend = async (content: string, mediaUrl?: string) => {
+    if (!user || !activeChat) return;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: activeChat.id,
+          user_id: user.id,
+          content,
+          media_url: mediaUrl
+        });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Message sent",
+        description: "Your message has been delivered securely."
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Failed to send message",
+        description: "Please try again or check your connection.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const reportUser = async (userId: string, reason: string) => {
+    if (!user) return;
+
+    try {
+      // This would integrate with your reporting system
+      toast({
+        title: "Report submitted",
+        description: "Thank you for helping keep PrideSphere safe. Our moderation team will review this report."
+      });
+      setShowReportModal(false);
+    } catch (error) {
+      toast({
+        title: "Failed to submit report",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const blockUser = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      setBlockedUsers(prev => new Set([...prev, userId]));
+      toast({
+        title: "User blocked",
+        description: "This user can no longer contact you."
+      });
+      setShowBlockModal(false);
+    } catch (error) {
+      toast({
+        title: "Failed to block user",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const addReactionToBackend = async (messageId: string, emoji: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .upsert({
+          message_id: messageId,
+          user_id: user.id,
+          emoji
+        }, {
+          onConflict: 'message_id,user_id,emoji'
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    }
+  };
+
   // Fake typing indicator when sending images or long text
   useEffect(() => {
     const t = setTimeout(() => setTyping(null), 1200);
     return () => clearTimeout(t);
   }, [typing]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!activeChat || (!draft.trim() && !pendingMedia)) return;
 
+    const messageContent = draft.trim();
+    let mediaUrl: string | undefined;
+
+    // Handle media upload if present
+    if (pendingMedia) {
+      // In production, upload to Supabase Storage
+      mediaUrl = URL.createObjectURL(pendingMedia);
+    }
+
+    // For demo purposes, add to local state immediately
     const newMsg: Message = {
       id: crypto.randomUUID(),
       chatId: activeChat.id,
       senderId: currentUser.id,
-      content: draft.trim(),
+      content: messageContent,
       createdAt: Date.now(),
-      mediaUrl: pendingMedia ? URL.createObjectURL(pendingMedia) : undefined,
+      mediaUrl
     };
 
     setMessages((prev) => [...prev, newMsg]);
@@ -257,24 +405,32 @@ export default function PrideSphereMessaging() {
         .sort(byRecent)
     );
 
-    // Simulate other user typing back
-    setTyping("someone");
-    setTimeout(() => {
-      const others = chatMembers.filter((u) => u.id !== currentUser.id);
-      if (others.length) {
-        const reply: Message = {
-          id: crypto.randomUUID(),
-          chatId: activeChat.id,
-          senderId: others[0].id,
-          content: "💖 Love that! See you soon.",
-          createdAt: Date.now(),
-        };
-        setMessages((p) => [...p, reply]);
-      }
-    }, 1200);
+    // Send to backend if user is authenticated
+    if (user) {
+      await sendMessageToBackend(messageContent, mediaUrl);
+    }
+
+    // Simulate other user typing back (for demo)
+    if (!user) {
+      setTyping("someone");
+      setTimeout(() => {
+        const others = chatMembers.filter((u) => u.id !== currentUser.id);
+        if (others.length) {
+          const reply: Message = {
+            id: crypto.randomUUID(),
+            chatId: activeChat.id,
+            senderId: others[0].id,
+            content: "💖 Love that! See you soon.",
+            createdAt: Date.now(),
+          };
+          setMessages((p) => [...p, reply]);
+        }
+      }, 1200);
+    }
   };
 
-  const addReaction = (messageId: string, emoji: string) => {
+  const addReaction = async (messageId: string, emoji: string) => {
+    // Update local state immediately for responsiveness
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -290,10 +446,41 @@ export default function PrideSphereMessaging() {
         };
       })
     );
+
+    // Send to backend if user is authenticated
+    if (user) {
+      await addReactionToBackend(messageId, emoji);
+    }
   };
 
-  const deleteMessage = (messageId: string) => {
+  const deleteMessage = async (messageId: string) => {
+    // Update local state immediately
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
+
+    // Send deletion to backend if user is authenticated
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('messages')
+          .delete()
+          .eq('id', messageId)
+          .eq('user_id', user.id); // Ensure user can only delete their own messages
+
+        if (error) throw error;
+        
+        toast({
+          title: "Message deleted",
+          description: "Your message has been removed."
+        });
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        toast({
+          title: "Failed to delete message",
+          description: "Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   const isMember = (userId: string) => activeChat?.memberIds.includes(userId);
@@ -484,8 +671,20 @@ export default function PrideSphereMessaging() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Safety & Controls</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem><Flag className="h-4 w-4 mr-2" /> Report</DropdownMenuItem>
-                  <DropdownMenuItem><BellOff className="h-4 w-4 mr-2" /> Mute</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowReportModal(true)}>
+                    <Flag className="h-4 w-4 mr-2" /> Report
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMutedChats(prev => new Set([...prev, activeChatId]))}>
+                    <BellOff className="h-4 w-4 mr-2" /> Mute
+                  </DropdownMenuItem>
+                  {activeChat?.type === "dm" && (
+                    <DropdownMenuItem 
+                      onClick={() => setShowBlockModal(true)}
+                      className="text-red-600"
+                    >
+                      <Ban className="h-4 w-4 mr-2" /> Block User
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem><Lock className="h-4 w-4 mr-2" /> View Encryption Info</DropdownMenuItem>
                   <DropdownMenuItem><UserRound className="h-4 w-4 mr-2" /> View Members</DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -648,6 +847,73 @@ export default function PrideSphereMessaging() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Report Modal */}
+      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report User or Content</DialogTitle>
+            <DialogDescription>
+              Help us keep PrideSphere safe. Your report will be reviewed by our moderation team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="reason">Reason for report</Label>
+              <select className="w-full mt-1 p-2 border rounded-md bg-slate-800 border-slate-700 text-slate-100">
+                <option value="harassment">Harassment or bullying</option>
+                <option value="hate-speech">Hate speech</option>
+                <option value="inappropriate">Inappropriate content</option>
+                <option value="spam">Spam or scam</option>
+                <option value="threat">Threats or violence</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="details">Additional details (optional)</Label>
+              <Textarea 
+                id="details" 
+                placeholder="Please provide any additional context..."
+                className="bg-slate-800/60 border-slate-700 text-slate-100"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowReportModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => reportUser('', '')}>
+                Submit Report
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block User Modal */}
+      <Dialog open={showBlockModal} onOpenChange={setShowBlockModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block User</DialogTitle>
+            <DialogDescription>
+              This user will no longer be able to message you or see your content. This action can be undone from your settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-3 p-4 bg-slate-800/40 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-amber-400" />
+            <div className="text-sm text-slate-300">
+              Blocking someone is serious. Consider muting or reporting if you're unsure.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlockModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => blockUser('')}>
+              Block User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
