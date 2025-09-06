@@ -11,7 +11,10 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import CommunityCreatePost from '@/components/communities/CommunityCreatePost';
 import PostCard from '@/components/feed/PostCard';
-// TransferOwnershipModal removed
+import { TransferOwnershipModal } from '@/components/communities/TransferOwnershipModal';
+import { DeleteCommunityModal } from '@/components/communities/DeleteCommunityModal';
+import { OwnerLeaveModal } from '@/components/communities/OwnerLeaveModal';
+import { useCommunities } from '@/hooks/useCommunities';
 
 const CommunityDetail = () => {
   const { id } = useParams();
@@ -25,6 +28,10 @@ const CommunityDetail = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showOwnerLeaveModal, setShowOwnerLeaveModal] = useState(false);
+  
+  const { leaveCommunity } = useCommunities();
 
   useEffect(() => {
     if (id) {
@@ -107,48 +114,19 @@ const CommunityDetail = () => {
   const handleLeave = async () => {
     if (!user || !id) return;
 
-    // Prevent owner from leaving without transferring ownership
+    // Prevent owner from leaving without transferring ownership or deleting
     if (userRole === 'owner') {
-      try {
-        const { data: otherMembers } = await supabase
-          .from('community_memberships')
-          .select('*')
-          .eq('community_id', id)
-          .neq('user_id', user.id);
-
-        if (!otherMembers || otherMembers.length === 0) {
-          toast({
-            title: "You must delete the community or assign a new owner before leaving.",
-            description: "There are no other members to transfer ownership to.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        toast({
-          title: "Transfer ownership before leaving.",
-          description: "As the owner, you must transfer ownership to another member before leaving.",
-          variant: "destructive"
-        });
-        return;
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to check community members",
-          variant: "destructive"
-        });
-        return;
-      }
+      setShowOwnerLeaveModal(true);
+      return;
     }
 
+    // Use the hook's leaveCommunity function for non-owners
     try {
-      const { error } = await supabase
-        .from('community_memberships')
-        .delete()
-        .eq('community_id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      const result = await leaveCommunity(id, userRole);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       setIsMember(false);
       setUserRole(null);
@@ -156,10 +134,10 @@ const CommunityDetail = () => {
         title: "Left community",
         description: "You've left this community"
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to leave community",
+        description: error.message || "Failed to leave community",
         variant: "destructive"
       });
     }
@@ -429,7 +407,7 @@ const CommunityDetail = () => {
                       </Button>
                       <Button 
                         variant="destructive" 
-                        onClick={handleDeleteCommunity}
+                        onClick={() => setShowDeleteModal(true)}
                         className="ml-2"
                       >
                         Delete Community
@@ -500,9 +478,37 @@ const CommunityDetail = () => {
             )}
           </CardContent>
         </Card>
+        {/* Modals */}
+        <TransferOwnershipModal
+          open={showTransferModal}
+          onOpenChange={setShowTransferModal}
+          communityId={id!}
+          communityName={community.name}
+          onTransferComplete={handleTransferComplete}
+        />
+        
+        <DeleteCommunityModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          communityId={id!}
+          communityName={community.name}
+          onDeleteComplete={() => navigate('/communities')}
+        />
+        
+        <OwnerLeaveModal
+          open={showOwnerLeaveModal}
+          onOpenChange={setShowOwnerLeaveModal}
+          onTransferOwnership={() => {
+            setShowOwnerLeaveModal(false);
+            setShowTransferModal(true);
+          }}
+          onDeleteCommunity={() => {
+            setShowOwnerLeaveModal(false);
+            setShowDeleteModal(true);
+          }}
+          communityName={community.name}
+        />
       </div>
-
-      {/* Transfer Ownership Modal removed */}
     </Layout>
   );
 };

@@ -653,8 +653,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_community_with_owner: {
+        Args: {
+          community_avatar_url?: string
+          community_banner_url?: string
+          community_category?: string
+          community_description?: string
+          community_name: string
+          community_tags?: string[]
+          is_premium?: boolean
+        }
+        Returns: string
+      }
       delete_community_cascade: {
         Args: { community_id_param: string }
+        Returns: undefined
+      }
+      transfer_community_ownership: {
+        Args: { community_id_param: string; new_owner_id: string }
         Returns: undefined
       }
     }

@@ -64,21 +64,39 @@ export const useCommunities = () => {
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      const { data, error } = await supabase.rpc('create_community_with_owner', {
-        community_name: communityData.name,
-        community_description: communityData.description || null,
-        community_category: communityData.category || 'General',
-        community_tags: communityData.tags || null,
-        community_avatar_url: communityData.avatar_url || null,
-        community_banner_url: communityData.banner_url || null,
-        is_premium: communityData.is_premium || false
-      });
+      // First create the community
+      const { data: community, error: communityError } = await supabase
+        .from('communities')
+        .insert({
+          name: communityData.name,
+          description: communityData.description || null,
+          category: communityData.category || 'General',
+          tags: communityData.tags || null,
+          avatar_url: communityData.avatar_url || null,
+          banner_url: communityData.banner_url || null,
+          is_premium: communityData.is_premium || false,
+          created_by: user.id,
+          member_count: 1
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (communityError) throw communityError;
+
+      // Then add the creator as owner
+      const { error: membershipError } = await supabase
+        .from('community_memberships')
+        .insert({
+          community_id: community.id,
+          user_id: user.id,
+          role: 'owner'
+        });
+
+      if (membershipError) throw membershipError;
 
       // Refresh communities to show the new one
       fetchCommunities();
-      return { success: true, communityId: data };
+      return { success: true, communityId: community.id };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
@@ -134,9 +152,26 @@ export const useCommunities = () => {
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      const { error } = await supabase.rpc('delete_community_cascade', {
-        community_id_param: communityId
-      });
+      // Check if user is owner
+      const { data: membership, error: membershipError } = await supabase
+        .from('community_memberships')
+        .select('role')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (membershipError || membership?.role !== 'owner') {
+        throw new Error('Only the community owner can delete the community');
+      }
+
+      // Delete all posts in this community
+      await supabase.from('posts').delete().eq('community_id', communityId);
+      
+      // Delete all memberships
+      await supabase.from('community_memberships').delete().eq('community_id', communityId);
+      
+      // Finally delete the community
+      const { error } = await supabase.from('communities').delete().eq('id', communityId);
 
       if (error) throw error;
 
@@ -152,12 +187,51 @@ export const useCommunities = () => {
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      const { error } = await supabase.rpc('transfer_community_ownership', {
-        community_id_param: communityId,
-        new_owner_id: newOwnerId
-      });
+      // Check if current user is the owner
+      const { data: currentMembership, error: currentError } = await supabase
+        .from('community_memberships')
+        .select('role')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) throw error;
+      if (currentError || currentMembership?.role !== 'owner') {
+        throw new Error('Only the community owner can transfer ownership');
+      }
+
+      // Check if new owner is a member
+      const { data: newOwnerMembership, error: newOwnerError } = await supabase
+        .from('community_memberships')
+        .select('id')
+        .eq('community_id', communityId)
+        .eq('user_id', newOwnerId)
+        .single();
+
+      if (newOwnerError) {
+        throw new Error('New owner must be a community member');
+      }
+
+      // Update current owner to admin
+      await supabase
+        .from('community_memberships')
+        .update({ role: 'admin' })
+        .eq('community_id', communityId)
+        .eq('user_id', user.id);
+
+      // Update new owner
+      await supabase
+        .from('community_memberships')
+        .update({ role: 'owner' })
+        .eq('community_id', communityId)
+        .eq('user_id', newOwnerId);
+
+      // Update community created_by
+      const { error: updateError } = await supabase
+        .from('communities')
+        .update({ created_by: newOwnerId })
+        .eq('id', communityId);
+
+      if (updateError) throw updateError;
 
       // Refresh communities to update the data
       fetchCommunities();
