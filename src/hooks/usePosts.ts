@@ -7,6 +7,7 @@ interface Post {
   content: string;
   mood: string | null;
   hashtags: string[] | null;
+  location: string | null;
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -80,6 +81,7 @@ const transformPost = (post: any) => {
     comments: post.comments_count,
     shares: Math.floor(post.likes_count * 0.2), // Estimate shares as 20% of likes
     hashtags: post.hashtags || [],
+    location: post.location,
     isLiked: false // Would need to check user's likes
   };
 };

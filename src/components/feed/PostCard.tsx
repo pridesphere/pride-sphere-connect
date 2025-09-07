@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Share, MoreHorizontal, Sparkles, Flag, Trash2, AlertTriangle, Shield } from "lucide-react";
+import { Heart, MessageCircle, Share, MoreHorizontal, Sparkles, Flag, Trash2, AlertTriangle, Shield, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import LocationSearchModal from "./LocationSearchModal";
 
 interface PostCardProps {
   post: {
@@ -47,6 +48,7 @@ interface PostCardProps {
     comments: number;
     shares: number;
     hashtags?: string[];
+    location?: string;
     isLiked?: boolean;
   };
   communityId?: string;
@@ -63,6 +65,7 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
   const [showComments, setShowComments] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   // Update state when post changes
   useEffect(() => {
@@ -132,6 +135,15 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
     if (!post.author.isAnonymous && !post.author.isDeleted && post.user_id) {
       navigate(`/profile/${post.user_id}`);
     }
+  };
+
+  const handleLocationClick = () => {
+    setShowLocationModal(true);
+  };
+
+  const handleLocationSelect = (location: string) => {
+    toast.success(`📍 Location searched: ${location}`);
+    // Here you could navigate to a search page or filter posts by location
   };
 
   const isCurrentUserPost = user?.id === post.user_id;
@@ -270,6 +282,22 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
         {/* Content */}
         <div className="mb-4">
           <p className="text-foreground leading-relaxed">{post.content}</p>
+          
+          {/* Location */}
+          {post.location && (
+            <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLocationClick}
+                className="p-0 h-auto text-muted-foreground hover:text-primary transition-colors"
+              >
+                <MapPin className="w-4 h-4 mr-1" />
+                {post.location}
+              </Button>
+            </div>
+          )}
+          
           {post.hashtags && post.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {post.hashtags.map((tag) => (
@@ -399,6 +427,13 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Location Search Modal */}
+      <LocationSearchModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onLocationSelect={handleLocationSelect}
+      />
     </Card>
   );
 };

@@ -132,7 +132,8 @@ const CreatePost = () => {
           mood: selectedMood,
           is_anonymous: isAnonymous,
           hashtags: hashtags,
-          media_urls: mediaUrls.length > 0 ? mediaUrls : null
+          media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+          location: location || null
         });
 
       if (error) throw error;
