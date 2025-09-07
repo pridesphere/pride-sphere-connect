@@ -7,66 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Heart, MessageCircle, Sparkles, Plus } from "lucide-react";
+import { usePosts } from "@/hooks/usePosts";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"feed" | "wellness">("feed");
-
-  // Sample posts data
-  const samplePosts = [
-    {
-      id: "1",
-      author: {
-        name: "Jordan River",
-        pronouns: "they/them",
-        verified: true,
-        avatar: undefined
-      },
-      content: "Just had the most magical day at Pride! The energy was incredible and seeing so many beautiful souls celebrating authentically made my heart so full. Remember, you belong here and your light makes this world brighter! ✨🌈",
-      mood: "Magical",
-      moodEmoji: "✨",
-      timestamp: "2 hours ago",
-      likes: 47,
-      comments: 12,
-      shares: 8,
-      hashtags: ["Pride", "Authentic", "Magical", "Community"],
-      isLiked: false
-    },
-    {
-      id: "2",
-      author: {
-        name: "Anonymous Rainbow",
-        pronouns: "",
-        verified: true,
-        isAnonymous: true
-      },
-      content: "Started my transition journey today. Scared but so excited to finally live as my true self. This community gives me strength. Thank you all for being here. 💙💖🤍",
-      mood: "Growth",
-      moodEmoji: "💚",
-      timestamp: "4 hours ago",
-      likes: 156,
-      comments: 34,
-      shares: 12,
-      hashtags: ["Transition", "TrueAuthentic", "Strength", "TransPride"],
-      isLiked: true
-    },
-    {
-      id: "3",
-      author: {
-        name: "Alex Chen",
-        pronouns: "she/her",
-        verified: true
-      },
-      content: "Mental health check-in: Today was tough, but I'm learning to be gentle with myself. Your struggles don't define you - your resilience does. Sending love to anyone who needs it today. 💖",
-      mood: "Supported",
-      moodEmoji: "🫂",
-      timestamp: "6 hours ago",
-      likes: 89,
-      comments: 23,
-      shares: 15,
-      hashtags: ["MentalHealth", "SelfCare", "Resilience"],
-      isLiked: false
-    }
-  ];
+  const { posts, loading } = usePosts();
 
   return (
     <Layout>
@@ -145,18 +90,35 @@ const Index = () => {
             
             {/* Feed */}
             <div className="space-y-6">
-              {samplePosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading magical posts...</p>
+                </div>
+              ) : posts.length > 0 ? (
+                posts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <Sparkles className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No posts yet!</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Be the first to share something magical with the community. Create a post above to get started! ✨
+                  </p>
+                </div>
+              )}
             </div>
             
-            {/* Load More */}
-            <div className="text-center py-8">
-              <Button variant="outline" size="lg">
-                <Plus className="w-4 h-4 mr-2" />
-                Load More Magical Posts
-              </Button>
-            </div>
+            {/* Load More - only show if there are posts */}
+            {posts.length > 0 && (
+              <div className="text-center py-8">
+                <Button variant="outline" size="lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Load More Magical Posts
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
