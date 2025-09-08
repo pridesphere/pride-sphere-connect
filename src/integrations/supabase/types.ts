@@ -715,6 +715,10 @@ export type Database = {
         Args: { community_id_param: string; new_owner_id: string }
         Returns: undefined
       }
+      user_can_access_conversation: {
+        Args: { conversation_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
