@@ -711,6 +711,10 @@ export type Database = {
         Args: { community_id_param: string; user_id_param: string }
         Returns: undefined
       }
+      is_community_member: {
+        Args: { community_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
       transfer_community_ownership: {
         Args: { community_id_param: string; new_owner_id: string }
         Returns: undefined
