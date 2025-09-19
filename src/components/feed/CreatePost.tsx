@@ -113,11 +113,27 @@ const CreatePost: React.FC<CreatePostProps> = ({ onSuccess }) => {
     setIsPosting(true);
     
     try {
-      // Upload media files if any
+      // Upload media files to Supabase Storage if any
       let mediaUrls: string[] = [];
       if (mediaFiles.length > 0) {
-        // For now, we'll just store the file names - in a real app you'd upload to Supabase Storage
-        mediaUrls = mediaFiles.map(file => file.name);
+        for (const file of mediaFiles) {
+          const fileName = `${user.id}/${Date.now()}-${file.name}`;
+          const { data, error: uploadError } = await supabase.storage
+            .from('post-media')
+            .upload(fileName, file);
+          
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            continue;
+          }
+          
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(fileName);
+          
+          mediaUrls.push(publicUrl);
+        }
       }
 
       // Create post in database
@@ -248,17 +264,30 @@ const CreatePost: React.FC<CreatePostProps> = ({ onSuccess }) => {
           {mediaFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">📸 Media attached:</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {mediaFiles.map((file, index) => (
-                  <Badge key={index} variant="secondary">
-                    {file.type.startsWith('video/') ? '🎥' : '📸'} {file.name}
+                  <div key={index} className="relative group">
+                    {file.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border"
+                      />
+                    ) : (
+                      <div className="w-full h-24 bg-muted rounded-lg border flex items-center justify-center">
+                        <div className="text-center">
+                          <Video className="w-6 h-6 mx-auto mb-1" />
+                          <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                        </div>
+                      </div>
+                    )}
                     <button
                       onClick={() => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
-                      className="ml-2 text-xs hover:text-destructive"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                     >
                       ×
                     </button>
-                  </Badge>
+                  </div>
                 ))}
               </div>
             </div>

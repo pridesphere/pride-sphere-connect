@@ -50,6 +50,7 @@ interface PostCardProps {
     hashtags?: string[];
     location?: string;
     isLiked?: boolean;
+    mediaUrls?: string[];
   };
   communityId?: string;
   userRole?: string;
@@ -282,6 +283,37 @@ const PostCard = ({ post, communityId, userRole, isOwner, onPostDeleted }: PostC
         {/* Content */}
         <div className="mb-4">
           <p className="text-foreground leading-relaxed">{post.content}</p>
+          
+          {/* Media Display */}
+          {post.mediaUrls && post.mediaUrls.length > 0 && (
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {post.mediaUrls.map((url, index) => {
+                  const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
+                  
+                  return (
+                    <div key={index} className="relative group">
+                      {isVideo ? (
+                        <video
+                          src={url}
+                          controls
+                          className="w-full max-h-80 object-cover rounded-lg border"
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={url}
+                          alt={`Post media ${index + 1}`}
+                          className="w-full max-h-80 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(url, '_blank')}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           {/* Location */}
           {post.location && (

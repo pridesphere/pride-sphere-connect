@@ -83,6 +83,7 @@ const transformPost = (post: any) => {
     shares: Math.floor(post.likes_count * 0.2), // Estimate shares as 20% of likes
     hashtags: post.hashtags || [],
     location: post.location,
+    mediaUrls: post.media_urls || [],
     isLiked: false // Would need to check user's likes
   };
 };
