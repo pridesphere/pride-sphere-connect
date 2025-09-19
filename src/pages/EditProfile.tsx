@@ -14,6 +14,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import Layout from "@/components/layout/Layout";
 import LocationSearchModal from "@/components/feed/LocationSearchModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const EditProfile = () => {
 
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Update form data when profile loads
   useEffect(() => {
@@ -86,6 +88,49 @@ const EditProfile = () => {
     setFormData(prev => ({ ...prev, location }));
     setShowLocationModal(false);
     toast.success("📍 Location updated!");
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingAvatar(true);
+    
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const result = await updateProfile({ avatar_url: data.publicUrl });
+      
+      if (result?.success) {
+        toast.success("✨ Profile picture updated!", {
+          description: "Your new avatar looks amazing!"
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast.error("Failed to update profile picture. Please try again.");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const getCurrentLocation = () => {
@@ -189,9 +234,10 @@ const EditProfile = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    Change Photo
+                    {uploadingAvatar ? "Uploading..." : "Change Photo"}
                   </Button>
                   <Button
                     variant="outline"
@@ -322,6 +368,7 @@ const EditProfile = () => {
             type="file"
             accept="image/*"
             className="hidden"
+            onChange={handleAvatarUpload}
           />
           <input
             ref={bannerInputRef}
