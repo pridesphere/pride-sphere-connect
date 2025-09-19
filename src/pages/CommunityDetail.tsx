@@ -175,10 +175,14 @@ const CommunityDetail = () => {
       // Fetch profiles for these users if there are any
       let profileMap = new Map();
       if (userIds.length > 0) {
+        console.log('Fetching profiles for user IDs:', userIds);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, display_name, username, avatar_url, is_verified, pronouns')
           .in('user_id', userIds);
+
+        console.log('Profiles data received:', profilesData);
+        console.log('Profiles error:', profilesError);
 
         if (profilesError) {
           console.warn('Error fetching profiles:', profilesError);
@@ -194,6 +198,7 @@ const CommunityDetail = () => {
         // Transform the data to match PostCard props
         const transformedPosts = postsData.map(post => {
           const profile = profileMap.get(post.user_id);
+          console.log(`Processing post by user ${post.user_id}, profile found:`, profile);
           
           // Determine user display info with better fallback logic
           let displayName = "🌈 Proud Member";
@@ -204,13 +209,16 @@ const CommunityDetail = () => {
           } else if (profile) {
             // Use display_name first, then username, then try to get from user metadata
             displayName = profile.display_name || profile.username || "🌈 Proud Member";
+            console.log(`Using profile name: ${displayName} from profile:`, profile);
           } else if (post.user_id && userIds.includes(post.user_id)) {
             // User ID exists but no profile found - account likely deleted
             displayName = "Deleted User";
             isDeleted = true;
+            console.log(`No profile found for user ${post.user_id}, marking as deleted`);
           } else if (post.user_id) {
             // User ID exists but wasn't included in userIds
             displayName = "🌈 Proud Member";
+            console.log(`User ${post.user_id} not in userIds, using fallback`);
           }
           
           return {
