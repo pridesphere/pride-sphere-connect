@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blocked_members: {
         Row: {
           blocked_at: string
@@ -683,6 +707,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymize_mood_entries_older_than: {
+        Args: { days_old?: number }
+        Returns: number
+      }
       block_community_member: {
         Args: {
           community_id_param: string
@@ -702,6 +730,10 @@ export type Database = {
           is_premium?: boolean
         }
         Returns: string
+      }
+      delete_all_user_mood_entries: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       delete_community_cascade: {
         Args: { community_id_param: string }
