@@ -131,6 +131,10 @@ const EditProfile = () => {
       toast.error("Failed to update cover banner. Please try again.");
     } finally {
       setUploadingBanner(false);
+      // Reset file input to allow selecting the same file again
+      if (bannerInputRef.current) {
+        bannerInputRef.current.value = '';
+      }
     }
   };
 
@@ -174,6 +178,10 @@ const EditProfile = () => {
       toast.error("Failed to update profile picture. Please try again.");
     } finally {
       setUploadingAvatar(false);
+      // Reset file input to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
