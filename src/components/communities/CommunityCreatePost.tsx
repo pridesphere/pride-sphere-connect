@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import LocationSearchModal from "@/components/feed/LocationSearchModal";
 
 interface CommunityCreatePostProps {
   communityId: string;
@@ -24,6 +25,7 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [showFullComposer, setShowFullComposer] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   
   const { profile, loading } = useProfile();
   const { user } = useAuth();
@@ -101,35 +103,9 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
     setHashtags(hashtagMatches);
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const response = await supabase.functions.invoke('reverse-geocode', {
-              body: {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
-              }
-            });
-
-            if (response.data?.address) {
-              setLocation(response.data.address);
-              toast.success("📍 Location detected!");
-            } else {
-              setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-              toast.success("📍 Location detected!");
-            }
-          } catch (error) {
-            setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-            toast.success("📍 Location detected!");
-          }
-        },
-        (error) => {
-          toast.error("Could not detect location");
-        }
-      );
-    }
+  const handleLocationSelect = (selectedLocation: string) => {
+    setLocation(selectedLocation);
+    toast.success("📍 Location added!");
   };
 
   const handlePost = async () => {
@@ -400,7 +376,7 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={getCurrentLocation}
+                onClick={() => setShowLocationModal(true)}
               >
                 <MapPin className="w-4 h-4" />
                 Location
@@ -443,6 +419,13 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
           accept="video/*"
           onChange={handleFileChange}
           className="hidden"
+        />
+
+        {/* Location Search Modal */}
+        <LocationSearchModal
+          isOpen={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          onLocationSelect={handleLocationSelect}
         />
       </CardContent>
     </Card>
