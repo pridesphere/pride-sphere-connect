@@ -76,7 +76,7 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
   // Debounce search to avoid too many API calls
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm.length > 2) {
+      if (searchTerm.length >= 3) { // Start searching after 3 characters
         searchPlaces(searchTerm);
       } else {
         setSearchResults([]);
@@ -122,7 +122,7 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             )}
             <Input
-              placeholder="Search for any location worldwide..."
+              placeholder="Type at least 3 letters to search worldwide locations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -135,9 +135,11 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
             <h4 className="text-sm font-medium text-muted-foreground">
               {searchResults.length > 0 
                 ? "Search Results" 
-                : searchTerm.length > 0 
-                  ? "Popular LGBTQIA+ Locations" 
-                  : "Popular LGBTQIA+ Locations"
+                : searchTerm.length >= 3 && searchTerm.length > 0
+                  ? "Type at least 3 letters to search"
+                  : searchTerm.length > 0 && searchTerm.length < 3
+                    ? `Type ${3 - searchTerm.length} more letters...`
+                    : "Popular LGBTQIA+ Locations"
               }
             </h4>
             <div className="max-h-60 overflow-y-auto space-y-1">
@@ -156,7 +158,12 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
                 ))
               ) : (
                 <div className="text-center text-muted-foreground text-sm py-4">
-                  {isSearching ? "Searching..." : `No locations found matching "${searchTerm}"`}
+                  {isSearching ? "Searching locations..." : 
+                   searchTerm.length > 0 && searchTerm.length < 3 ? 
+                   `Type ${3 - searchTerm.length} more letters to search worldwide` :
+                   searchTerm.length >= 3 ? 
+                   `No locations found for "${searchTerm}"` :
+                   "Type to search for locations worldwide"}
                 </div>
               )}
             </div>

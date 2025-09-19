@@ -13,11 +13,10 @@ serve(async (req) => {
   try {
     const { query } = await req.json()
     
-    if (!query || query.trim().length === 0) {
+    if (!query || query.trim().length < 2) {
       return new Response(
-        JSON.stringify({ error: 'Query parameter is required' }),
+        JSON.stringify({ places: [] }),
         {
-          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
@@ -25,6 +24,7 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY')
     if (!apiKey) {
+      console.error('Google Places API key not configured')
       return new Response(
         JSON.stringify({ error: 'Google Places API key not configured' }),
         {
@@ -34,13 +34,19 @@ serve(async (req) => {
       )
     }
 
-    // Use Google Places Text Search API
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`
+    // Use Google Places Autocomplete API for better search suggestions
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${apiKey}&types=geocode`
+    
+    console.log(`Making request to Google Places API: ${url}`)
     
     const response = await fetch(url)
     const data = await response.json()
 
+    console.log(`Google Places API response status: ${data.status}`)
+    console.log(`Google Places API response:`, JSON.stringify(data, null, 2))
+
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      console.error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
       return new Response(
         JSON.stringify({ error: `Google Places API error: ${data.status}` }),
         {
@@ -50,14 +56,16 @@ serve(async (req) => {
       )
     }
 
-    // Transform the results to include relevant information
-    const places = data.results?.map((place: any) => ({
-      place_id: place.place_id,
-      name: place.name,
-      formatted_address: place.formatted_address,
-      geometry: place.geometry,
-      types: place.types,
+    // Transform the autocomplete results to match our expected format
+    const places = data.predictions?.map((prediction: any) => ({
+      place_id: prediction.place_id,
+      name: prediction.structured_formatting?.main_text || prediction.description,
+      formatted_address: prediction.description,
+      geometry: null, // Autocomplete doesn't return geometry, we'll get it if needed
+      types: prediction.types,
     })) || []
+
+    console.log(`Returning ${places.length} places`)
 
     return new Response(
       JSON.stringify({ places }),
@@ -66,6 +74,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in search-places function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
