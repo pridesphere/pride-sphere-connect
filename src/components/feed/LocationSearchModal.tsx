@@ -35,7 +35,6 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Place[]>([]);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   // Popular LGBTQIA+ locations as fallback
   const popularLocations = [
@@ -87,42 +86,6 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const getCurrentLocation = () => {
-    setIsLoadingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { data, error } = await supabase.functions.invoke('reverse-geocode', {
-              body: { 
-                lat: position.coords.latitude, 
-                lng: position.coords.longitude 
-              }
-            });
-
-            if (error) throw error;
-
-            onLocationSelect(data.formatted_address);
-            onClose();
-          } catch (error) {
-            console.error('Error getting location name:', error);
-            toast.error('Failed to get location name. Please try again.');
-          } finally {
-            setIsLoadingLocation(false);
-          }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          toast.error('Failed to get your location. Please check permissions.');
-          setIsLoadingLocation(false);
-        }
-      );
-    } else {
-      toast.error('Geolocation is not supported by this browser.');
-      setIsLoadingLocation(false);
-    }
-  };
-
   const handleLocationSelect = (location: string) => {
     onLocationSelect(location);
     onClose();
@@ -159,27 +122,13 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             )}
             <Input
-              placeholder="Search for a location worldwide..."
+              placeholder="Search for any location worldwide..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
+              autoFocus
             />
           </div>
-
-          {/* Current Location Button */}
-          <Button
-            variant="outline"
-            onClick={getCurrentLocation}
-            disabled={isLoadingLocation}
-            className="w-full justify-start"
-          >
-            {isLoadingLocation ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <MapPin className="w-4 h-4 mr-2" />
-            )}
-            {isLoadingLocation ? "Getting location..." : "Use Current Location"}
-          </Button>
 
           {/* Popular/Search Results */}
           <div className="space-y-2">
