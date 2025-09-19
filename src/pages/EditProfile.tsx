@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import Layout from "@/components/layout/Layout";
+import LocationSearchModal from "@/components/feed/LocationSearchModal";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const EditProfile = () => {
   });
 
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   // Update form data when profile loads
   useEffect(() => {
@@ -78,6 +80,12 @@ const EditProfile = () => {
         ? prev.filter(v => v !== vibe)
         : [...prev, vibe]
     );
+  };
+
+  const handleLocationSelect = (location: string) => {
+    setFormData(prev => ({ ...prev, location }));
+    setShowLocationModal(false);
+    toast.success("📍 Location updated!");
   };
 
   const getCurrentLocation = () => {
@@ -252,11 +260,13 @@ const EditProfile = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                     placeholder="Where your story unfolds"
                     className="magical-border flex-1"
+                    onClick={() => setShowLocationModal(true)}
+                    readOnly
                   />
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={getCurrentLocation}
+                    onClick={() => setShowLocationModal(true)}
                   >
                     <MapPin className="w-4 h-4" />
                   </Button>
@@ -318,6 +328,13 @@ const EditProfile = () => {
             type="file"
             accept="image/*"
             className="hidden"
+          />
+
+          {/* Location Search Modal */}
+          <LocationSearchModal
+            isOpen={showLocationModal}
+            onClose={() => setShowLocationModal(false)}
+            onLocationSelect={handleLocationSelect}
           />
         </div>
       </div>
