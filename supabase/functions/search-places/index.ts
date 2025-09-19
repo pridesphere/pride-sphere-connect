@@ -11,9 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json()
+    console.log('=== Search Places Function Called ===')
+    const body = await req.json()
+    console.log('Request body:', JSON.stringify(body))
+    
+    const { query } = body
     
     if (!query || query.trim().length < 2) {
+      console.log('Query too short or empty:', query)
       return new Response(
         JSON.stringify({ places: [] }),
         {
@@ -24,7 +29,7 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY')
     if (!apiKey) {
-      console.error('Google Places API key not configured')
+      console.error('❌ Google Places API key not found in environment')
       return new Response(
         JSON.stringify({ error: 'Google Places API key not configured' }),
         {
@@ -34,21 +39,58 @@ serve(async (req) => {
       )
     }
 
-    // Use Google Places Autocomplete API for better search suggestions
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${apiKey}&types=geocode`
+    console.log('✅ API Key found, length:', apiKey.length)
+
+    // Use Google Places Autocomplete API with better parameters
+    const baseUrl = 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+    const params = new URLSearchParams({
+      input: query,
+      key: apiKey,
+      types: '(cities)', // Focus on cities and places
+      fields: 'place_id,name,formatted_address,geometry'
+    })
     
-    console.log(`Making request to Google Places API: ${url}`)
+    const url = `${baseUrl}?${params.toString()}`
+    console.log('🌐 Making request to:', url.replace(apiKey, 'API_KEY_HIDDEN'))
     
     const response = await fetch(url)
-    const data = await response.json()
+    console.log('📡 Response status:', response.status)
+    
+    if (!response.ok) {
+      console.error('❌ HTTP Error:', response.status, response.statusText)
+      return new Response(
+        JSON.stringify({ error: `HTTP ${response.status}: ${response.statusText}` }),
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
 
-    console.log(`Google Places API response status: ${data.status}`)
-    console.log(`Google Places API response:`, JSON.stringify(data, null, 2))
+    const data = await response.json()
+    console.log('📄 API Response status:', data.status)
+    console.log('📄 API Response:', JSON.stringify(data, null, 2))
+
+    if (data.status === 'REQUEST_DENIED') {
+      console.error('❌ REQUEST_DENIED - Check API key permissions')
+      console.error('Error message:', data.error_message)
+      return new Response(
+        JSON.stringify({ 
+          error: `API Request Denied: ${data.error_message || 'Check API key permissions'}` 
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
 
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
+      console.error('❌ Google Places API error:', data.status, data.error_message)
       return new Response(
-        JSON.stringify({ error: `Google Places API error: ${data.status}` }),
+        JSON.stringify({ 
+          error: `Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}` 
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -56,17 +98,17 @@ serve(async (req) => {
       )
     }
 
-    // Transform the autocomplete results to match our expected format
+    // Transform the autocomplete results
     const places = data.predictions?.map((prediction: any) => ({
       place_id: prediction.place_id,
-      name: prediction.structured_formatting?.main_text || prediction.description,
+      name: prediction.structured_formatting?.main_text || prediction.description.split(',')[0],
       formatted_address: prediction.description,
-      geometry: null, // Autocomplete doesn't return geometry, we'll get it if needed
+      geometry: null,
       types: prediction.types,
     })) || []
 
-    console.log(`Returning ${places.length} places`)
-
+    console.log(`✅ Returning ${places.length} places`)
+    
     return new Response(
       JSON.stringify({ places }),
       {
@@ -74,7 +116,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error in search-places function:', error)
+    console.error('💥 Function error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

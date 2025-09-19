@@ -55,18 +55,30 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
       return;
     }
 
+    console.log('🔍 Searching for:', query);
     setIsSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke('search-places', {
         body: { query }
       });
 
-      if (error) throw error;
+      console.log('📡 Edge function response:', { data, error });
 
-      setSearchResults(data.places || []);
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.places) {
+        console.log('✅ Received places:', data.places);
+        setSearchResults(data.places || []);
+      } else {
+        console.log('⚠️ No places in response:', data);
+        setSearchResults([]);
+      }
     } catch (error) {
-      console.error('Error searching places:', error);
-      toast.error('Failed to search locations. Please try again.');
+      console.error('💥 Search error:', error);
+      toast.error(`Search failed: ${error.message || 'Please try again'}`);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
