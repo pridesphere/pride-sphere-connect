@@ -111,13 +111,15 @@ const EditProfile = () => {
         throw uploadError;
       }
 
-      // Get public URL
+      // Get public URL with cache-busting timestamp
       const { data } = supabase.storage
         .from('community-banners')
         .getPublicUrl(fileName);
 
+      const bannerUrlWithCacheBust = `${data.publicUrl}?t=${Date.now()}`;
+
       // Update profile with new banner URL
-      const result = await updateProfile({ banner_url: data.publicUrl } as any);
+      const result = await updateProfile({ banner_url: bannerUrlWithCacheBust });
       
       if (result?.success) {
         toast.success("✨ Cover banner updated!", {
@@ -158,13 +160,15 @@ const EditProfile = () => {
         throw uploadError;
       }
 
-      // Get public URL
+      // Get public URL with cache-busting timestamp
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
+      const avatarUrlWithCacheBust = `${data.publicUrl}?t=${Date.now()}`;
+
       // Update profile with new avatar URL
-      const result = await updateProfile({ avatar_url: data.publicUrl });
+      const result = await updateProfile({ avatar_url: avatarUrlWithCacheBust });
       
       if (result?.success) {
         toast.success("✨ Profile picture updated!", {
