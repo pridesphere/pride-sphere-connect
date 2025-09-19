@@ -66,7 +66,17 @@ const LocationSearchModal = ({ isOpen, onClose, onLocationSelect }: LocationSear
 
       if (error) {
         console.error('❌ Edge function error:', error);
-        throw error;
+        toast.error(`Search failed: ${error.message}`);
+        setSearchResults([]);
+        return;
+      }
+
+      // Check if the response contains an error message from Google API
+      if (data?.error) {
+        console.error('❌ Google API error:', data.error);
+        toast.error(`${data.error}`);
+        setSearchResults([]);
+        return;
       }
 
       if (data?.places) {

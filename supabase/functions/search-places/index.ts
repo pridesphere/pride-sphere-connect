@@ -41,12 +41,11 @@ serve(async (req) => {
 
     console.log('✅ API Key found, length:', apiKey.length)
 
-    // Use Google Places Autocomplete API with better parameters
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+    // Try Text Search API first (more basic, more likely to work)
+    const baseUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
     const params = new URLSearchParams({
-      input: query,
+      query: query,
       key: apiKey,
-      types: '(cities)', // Focus on cities and places
       fields: 'place_id,name,formatted_address,geometry'
     })
     
@@ -55,13 +54,20 @@ serve(async (req) => {
     
     const response = await fetch(url)
     console.log('📡 Response status:', response.status)
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
     
     if (!response.ok) {
       console.error('❌ HTTP Error:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('❌ Error body:', errorText)
+      
       return new Response(
-        JSON.stringify({ error: `HTTP ${response.status}: ${response.statusText}` }),
+        JSON.stringify({ 
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          details: errorText 
+        }),
         {
-          status: response.status,
+          status: 200, // Return 200 so the frontend gets the error message
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
@@ -69,17 +75,38 @@ serve(async (req) => {
 
     const data = await response.json()
     console.log('📄 API Response status:', data.status)
-    console.log('📄 API Response:', JSON.stringify(data, null, 2))
+    console.log('📄 API Response data:', JSON.stringify(data, null, 2))
 
     if (data.status === 'REQUEST_DENIED') {
-      console.error('❌ REQUEST_DENIED - Check API key permissions')
+      console.error('❌ REQUEST_DENIED - API Key issue')
       console.error('Error message:', data.error_message)
+      
+      let fixMessage = 'Check that Places API is enabled in Google Cloud Console'
+      if (data.error_message?.includes('billing')) {
+        fixMessage = 'Enable billing in Google Cloud Console'
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: `API Request Denied: ${data.error_message || 'Check API key permissions'}` 
+          error: `API Access Denied: ${data.error_message || fixMessage}`,
+          places: [] 
         }),
         {
-          status: 403,
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    if (data.status === 'OVER_QUERY_LIMIT') {
+      console.error('❌ OVER_QUERY_LIMIT')
+      return new Response(
+        JSON.stringify({ 
+          error: 'API quota exceeded. Try again later.',
+          places: [] 
+        }),
+        {
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
@@ -89,22 +116,23 @@ serve(async (req) => {
       console.error('❌ Google Places API error:', data.status, data.error_message)
       return new Response(
         JSON.stringify({ 
-          error: `Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}` 
+          error: `API Error: ${data.status} - ${data.error_message || 'Unknown error'}`,
+          places: []
         }),
         {
-          status: 500,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
 
-    // Transform the autocomplete results
-    const places = data.predictions?.map((prediction: any) => ({
-      place_id: prediction.place_id,
-      name: prediction.structured_formatting?.main_text || prediction.description.split(',')[0],
-      formatted_address: prediction.description,
-      geometry: null,
-      types: prediction.types,
+    // Transform the text search results
+    const places = data.results?.map((place: any) => ({
+      place_id: place.place_id,
+      name: place.name,
+      formatted_address: place.formatted_address,
+      geometry: place.geometry,
+      types: place.types,
     })) || []
 
     console.log(`✅ Returning ${places.length} places`)
@@ -118,9 +146,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Function error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: `Function error: ${error.message}`,
+        places: []
+      }),
       {
-        status: 500,
+        status: 200, // Return 200 so frontend gets the error
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
