@@ -6,7 +6,7 @@ import MentalHealthTools from "@/components/wellness/MentalHealthTools";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Heart, MessageCircle, Sparkles, Plus } from "lucide-react";
+import { MessageCircle, Sparkles, Plus } from "lucide-react";
 import { usePosts } from "@/hooks/usePosts";
 
 const Index = () => {
@@ -30,38 +30,6 @@ const Index = () => {
             <Badge className="bg-gradient-pride text-white">🌈 LGBTQIA+ Only</Badge>
             <Badge className="bg-gradient-trans text-foreground">💖 All Identities Welcome</Badge>
           </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="text-center shadow-card hover:shadow-magical transition-all duration-300">
-            <CardContent className="p-4">
-              <Users className="w-8 h-8 text-pride-blue mx-auto mb-2" />
-              <p className="text-2xl font-bold">1,247</p>
-              <p className="text-sm text-muted-foreground">Verified Members</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center shadow-card hover:shadow-magical transition-all duration-300">
-            <CardContent className="p-4">
-              <Heart className="w-8 h-8 text-pride-red mx-auto mb-2" />
-              <p className="text-2xl font-bold">8,934</p>
-              <p className="text-sm text-muted-foreground">Love Shared Today</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center shadow-card hover:shadow-magical transition-all duration-300">
-            <CardContent className="p-4">
-              <MessageCircle className="w-8 h-8 text-pride-purple mx-auto mb-2" />
-              <p className="text-2xl font-bold">456</p>
-              <p className="text-sm text-muted-foreground">Active Communities</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center shadow-card hover:shadow-magical transition-all duration-300">
-            <CardContent className="p-4">
-              <Sparkles className="w-8 h-8 text-pride-pink mx-auto mb-2" />
-              <p className="text-2xl font-bold">24/7</p>
-              <p className="text-sm text-muted-foreground">Support Available</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tab Navigation */}
