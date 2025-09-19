@@ -65,7 +65,7 @@ const Index = () => {
                 </div>
               ) : posts.length > 0 ? (
                 posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
+                  <PostCard key={post.id} post={post} onPostDeleted={refetch} />
                 ))
               ) : (
                 <div className="text-center py-12">

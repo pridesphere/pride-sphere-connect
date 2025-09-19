@@ -66,6 +66,7 @@ const transformPost = (post: any) => {
 
   return {
     id: post.id,
+    user_id: post.user_id, // Add this for delete functionality
     author: {
       name: displayName,
       pronouns: pronouns,
@@ -99,7 +100,16 @@ export const usePosts = () => {
       console.log('Fetching posts...');
       const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            display_name,
+            username,
+            pronouns,
+            is_verified,
+            avatar_url
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(20);
 
