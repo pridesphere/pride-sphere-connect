@@ -233,6 +233,8 @@ const CommunityDetail = () => {
             comments: 0,
             shares: 0,
             hashtags: post.hashtags || [],
+            location: post.location,
+            mediaUrls: post.media_urls || [],
             isLiked: false
           };
         });
