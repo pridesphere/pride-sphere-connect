@@ -104,9 +104,26 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-          toast.success("📍 Location detected!");
+        async (position) => {
+          try {
+            const response = await supabase.functions.invoke('reverse-geocode', {
+              body: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+              }
+            });
+
+            if (response.data?.address) {
+              setLocation(response.data.address);
+              toast.success("📍 Location detected!");
+            } else {
+              setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
+              toast.success("📍 Location detected!");
+            }
+          } catch (error) {
+            setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
+            toast.success("📍 Location detected!");
+          }
         },
         (error) => {
           toast.error("Could not detect location");
@@ -132,8 +149,26 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
       // Upload media files if any
       let mediaUrls: string[] = [];
       if (mediaFiles.length > 0) {
-        // For now, we'll just store the file names - in a real app you'd upload to Supabase Storage
-        mediaUrls = mediaFiles.map(file => file.name);
+        for (const file of mediaFiles) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${user.id}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('post-media')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw new Error('Failed to upload media');
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(filePath);
+
+          mediaUrls.push(publicUrl);
+        }
       }
 
       // Create post in database with community_id and proper validation
@@ -141,12 +176,13 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
         .from('posts')
         .insert({
           content: postContent,
-          user_id: user.id, // This is now required by DB constraint
+          user_id: user.id,
           community_id: communityId,
           mood: selectedMood || null,
           is_anonymous: isAnonymous,
           hashtags: hashtags.length > 0 ? hashtags : null,
-          media_urls: mediaUrls.length > 0 ? mediaUrls : null
+          media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+          location: location || null
         });
 
       if (error) {
@@ -266,17 +302,27 @@ const CommunityCreatePost = ({ communityId, onPostCreated }: CommunityCreatePost
           {mediaFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">📸 Media attached:</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                 {mediaFiles.map((file, index) => (
-                  <Badge key={index} variant="secondary">
-                    {file.type.startsWith('video/') ? '🎥' : '📸'} {file.name}
+                  <div key={index} className="relative group">
+                    {file.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt="Preview"
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-full h-20 bg-muted rounded-lg flex items-center justify-center">
+                        <Video className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
                     <button
                       onClick={() => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
-                      className="ml-2 text-xs hover:text-destructive"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       ×
                     </button>
-                  </Badge>
+                  </div>
                 ))}
               </div>
             </div>
