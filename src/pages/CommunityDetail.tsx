@@ -195,22 +195,22 @@ const CommunityDetail = () => {
         const transformedPosts = postsData.map(post => {
           const profile = profileMap.get(post.user_id);
           
-          // Determine user display info
-          let displayName = "User";
+          // Determine user display info with better fallback logic
+          let displayName = "🌈 Proud Member";
           let isDeleted = false;
           
           if (post.is_anonymous) {
             displayName = "Anonymous Rainbow";
           } else if (profile) {
-            // User has a profile - use display_name, fallback to username, fallback to "User"
-            displayName = profile.display_name || profile.username || `User`;
+            // Use display_name first, then username, then try to get from user metadata
+            displayName = profile.display_name || profile.username || "🌈 Proud Member";
           } else if (post.user_id && userIds.includes(post.user_id)) {
             // User ID exists but no profile found - account likely deleted
             displayName = "Deleted User";
             isDeleted = true;
           } else if (post.user_id) {
-            // User ID exists but wasn't included in userIds (shouldn't happen with current logic)
-            displayName = "User";
+            // User ID exists but wasn't included in userIds
+            displayName = "🌈 Proud Member";
           }
           
           return {
