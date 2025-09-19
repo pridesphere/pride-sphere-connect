@@ -47,19 +47,7 @@ serve(async (req) => {
     const requestBody = {
       textQuery: query,
       languageCode: 'en',
-      maxResultCount: 10,
-      locationBias: {
-        rectangle: {
-          low: {
-            latitude: -90,
-            longitude: -180
-          },
-          high: {
-            latitude: 90,
-            longitude: 180
-          }
-        }
-      }
+      maxResultCount: 10
     }
     
     console.log('🌐 Making request to NEW Places API:', url)
