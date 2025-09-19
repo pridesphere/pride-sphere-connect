@@ -319,10 +319,34 @@ const CommunityDetail = () => {
     setShowDeleteModal(true);
   };
 
-  const handleTransferComplete = () => {
+  const handleTransferComplete = async () => {
+    // Add a small delay to ensure database changes are propagated
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     // Refresh community data and membership status
-    fetchCommunity();
-    checkMembership();
+    try {
+      await fetchCommunity();
+      await checkMembership();
+      
+      // Force a re-render by updating state
+      setActiveTab("posts");
+      
+      toast({
+        title: "✅ Ownership transferred successfully!",
+        description: "The community ownership has been transferred and data has been refreshed."
+      });
+    } catch (error) {
+      console.error('Error refreshing after transfer:', error);
+      // Retry once more after a longer delay
+      setTimeout(async () => {
+        try {
+          await fetchCommunity();
+          await checkMembership();
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+        }
+      }, 1000);
+    }
   };
 
   if (loading) {

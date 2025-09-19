@@ -187,51 +187,13 @@ export const useCommunities = () => {
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      // Check if current user is the owner
-      const { data: currentMembership, error: currentError } = await supabase
-        .from('community_memberships')
-        .select('role')
-        .eq('community_id', communityId)
-        .eq('user_id', user.id)
-        .single();
+      // Use the secure database function for atomic ownership transfer
+      const { error } = await supabase.rpc('transfer_community_ownership', {
+        community_id_param: communityId,
+        new_owner_id: newOwnerId
+      });
 
-      if (currentError || currentMembership?.role !== 'owner') {
-        throw new Error('Only the community owner can transfer ownership');
-      }
-
-      // Check if new owner is a member
-      const { data: newOwnerMembership, error: newOwnerError } = await supabase
-        .from('community_memberships')
-        .select('id')
-        .eq('community_id', communityId)
-        .eq('user_id', newOwnerId)
-        .single();
-
-      if (newOwnerError) {
-        throw new Error('New owner must be a community member');
-      }
-
-      // Update current owner to admin
-      await supabase
-        .from('community_memberships')
-        .update({ role: 'admin' })
-        .eq('community_id', communityId)
-        .eq('user_id', user.id);
-
-      // Update new owner
-      await supabase
-        .from('community_memberships')
-        .update({ role: 'owner' })
-        .eq('community_id', communityId)
-        .eq('user_id', newOwnerId);
-
-      // Update community created_by
-      const { error: updateError } = await supabase
-        .from('communities')
-        .update({ created_by: newOwnerId })
-        .eq('id', communityId);
-
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       // Refresh communities to update the data
       fetchCommunities();
