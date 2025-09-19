@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import LocationSearchModal from "./LocationSearchModal";
 
 const CreatePost = () => {
   const [postContent, setPostContent] = useState("");
@@ -19,6 +20,7 @@ const CreatePost = () => {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [showFullComposer, setShowFullComposer] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   
   const { profile, loading } = useProfile();
   const { user } = useAuth();
@@ -96,18 +98,9 @@ const CreatePost = () => {
     setHashtags(hashtagMatches);
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
-          toast.success("📍 Location detected!");
-        },
-        (error) => {
-          toast.error("Could not detect location");
-        }
-      );
-    }
+  const handleLocationSelect = (selectedLocation: string) => {
+    setLocation(selectedLocation);
+    toast.success("📍 Location added!");
   };
 
   const handlePost = async () => {
@@ -334,7 +327,7 @@ const CreatePost = () => {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={getCurrentLocation}
+                onClick={() => setShowLocationModal(true)}
               >
                 <MapPin className="w-4 h-4" />
                 Location
@@ -377,6 +370,13 @@ const CreatePost = () => {
           accept="video/*"
           onChange={handleFileChange}
           className="hidden"
+        />
+
+        {/* Location Search Modal */}
+        <LocationSearchModal
+          isOpen={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          onLocationSelect={handleLocationSelect}
         />
       </CardContent>
     </Card>
