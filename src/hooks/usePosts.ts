@@ -96,24 +96,20 @@ export const usePosts = () => {
 
   const fetchPosts = async () => {
     try {
+      console.log('Fetching posts...');
       const { data, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles:user_id (
-            display_name,
-            username,
-            pronouns,
-            is_verified,
-            avatar_url
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
+
+      console.log('Posts data:', data);
+      console.log('Posts error:', error);
 
       if (error) throw error;
       
       const transformedPosts = (data || []).map(transformPost);
+      console.log('Transformed posts:', transformedPosts);
       setPosts(transformedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
