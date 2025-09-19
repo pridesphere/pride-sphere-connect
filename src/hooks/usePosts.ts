@@ -98,31 +98,45 @@ export const usePosts = () => {
   const fetchPosts = async () => {
     try {
       console.log('Fetching posts...');
-      const { data, error } = await supabase
+      
+      // First try to get posts without profiles to debug
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles (
-            display_name,
-            username,
-            pronouns,
-            is_verified,
-            avatar_url
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      console.log('Posts data:', data);
-      console.log('Posts error:', error);
+      console.log('Posts only data:', postsData);
+      console.log('Posts only error:', postsError);
 
-      if (error) throw error;
-      
-      const transformedPosts = (data || []).map(transformPost);
-      console.log('Transformed posts:', transformedPosts);
-      setPosts(transformedPosts);
+      if (postsError) throw postsError;
+
+      // If posts exist, fetch profiles separately
+      if (postsData && postsData.length > 0) {
+        const userIds = postsData.map(post => post.user_id);
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('user_id', userIds);
+
+        console.log('Profiles data:', profilesData);
+        console.log('Profiles error:', profilesError);
+
+        // Transform posts with profile data
+        const transformedPosts = postsData.map(post => {
+          const profile = profilesData?.find(p => p.user_id === post.user_id);
+          return transformPost({ ...post, profiles: profile });
+        });
+
+        console.log('Transformed posts:', transformedPosts);
+        setPosts(transformedPosts);
+      } else {
+        setPosts([]);
+      }
     } catch (error) {
       console.error('Error fetching posts:', error);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
