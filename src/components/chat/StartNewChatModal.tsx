@@ -36,39 +36,65 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   const [groupName, setGroupName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Fetch available users (friends and community members)
+  // Fetch friends only (users who have accepted friend requests)
   useEffect(() => {
     if (!isOpen || !user) return;
 
-    const fetchUsers = async () => {
+    const fetchFriends = async () => {
       try {
-        // Get all profiles except current user
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id, display_name, avatar_url, pronouns')
-          .neq('user_id', user.id)
-          .ilike('display_name', `%${searchQuery}%`)
-          .limit(20);
+        // Get accepted friendships where user is involved
+        const { data: friendships, error } = await supabase
+          .from('friendships')
+          .select(`
+            *,
+            requester_profile:profiles!friendships_requester_id_fkey(
+              user_id,
+              display_name,
+              avatar_url,
+              pronouns
+            ),
+            addressee_profile:profiles!friendships_addressee_id_fkey(
+              user_id,
+              display_name,
+              avatar_url,
+              pronouns
+            )
+          `)
+          .eq('status', 'accepted')
+          .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
         if (error) {
-          toast.error('Failed to load users');
+          toast.error('Failed to load friends');
           return;
         }
 
-        const users = data?.map(profile => ({
-          id: profile.user_id,
-          display_name: profile.display_name || 'Unknown User',
-          avatar_url: profile.avatar_url,
-          pronouns: profile.pronouns
-        })) || [];
+        // Map friendships to friend users
+        const friends: User[] = [];
+        friendships?.forEach(friendship => {
+          const isRequester = friendship.requester_id === user.id;
+          const friendProfile = isRequester 
+            ? friendship.addressee_profile 
+            : friendship.requester_profile;
+          
+          if (friendProfile && 
+              (friendProfile.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               !searchQuery)) {
+            friends.push({
+              id: friendProfile.user_id,
+              display_name: friendProfile.display_name || 'Unknown User',
+              avatar_url: friendProfile.avatar_url,
+              pronouns: friendProfile.pronouns
+            });
+          }
+        });
 
-        setAvailableUsers(users);
+        setAvailableUsers(friends);
       } catch (error) {
-        toast.error('Failed to load users');
+        toast.error('Failed to load friends');
       }
     };
 
-    fetchUsers();
+    fetchFriends();
   }, [isOpen, user, searchQuery]);
 
   const handleUserSelection = (userId: string) => {
