@@ -117,7 +117,7 @@ const EditProfile = () => {
         .getPublicUrl(fileName);
 
       // Update profile with new banner URL
-      const result = await updateProfile({ banner_url: data.publicUrl });
+      const result = await updateProfile({ banner_url: data.publicUrl } as any);
       
       if (result?.success) {
         toast.success("✨ Cover banner updated!", {
@@ -265,7 +265,7 @@ const EditProfile = () => {
             <div 
               className="relative h-32 bg-gradient-subtle cursor-pointer group"
               style={{
-                backgroundImage: profile?.banner_url ? `url(${profile.banner_url})` : undefined,
+                backgroundImage: (profile as any)?.banner_url ? `url(${(profile as any).banner_url})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
               }}
@@ -275,7 +275,7 @@ const EditProfile = () => {
                 <div className="text-white/80 group-hover:text-white transition-colors text-center">
                   <Upload className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-sm font-medium">
-                    {uploadingBanner ? "Uploading..." : profile?.banner_url ? "Change Cover" : "Add Cover Photo"}
+                    {uploadingBanner ? "Uploading..." : (profile as any)?.banner_url ? "Change Cover" : "Add Cover Photo"}
                   </p>
                 </div>
               </div>
