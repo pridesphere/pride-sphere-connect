@@ -6,14 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit, Settings, Heart, MessageCircle, Users, Calendar, MapPin, Link as LinkIcon } from "lucide-react";
-import CreatePostModal from "@/components/feed/CreatePostModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Profile = () => {
   const { user: authUser } = useAuth();
-  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({
     posts: 0,
@@ -277,22 +275,15 @@ const Profile = () => {
               <Button 
                 variant="magical" 
                 className="mt-4"
-                onClick={() => setCreatePostModalOpen(true)}
+                asChild
               >
-                ✨ Create Your First Post
+                <Link to="/">
+                  ✨ Create Your First Post
+                </Link>
               </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Create Post Modal */}
-        <CreatePostModal
-          open={createPostModalOpen}
-          onOpenChange={setCreatePostModalOpen}
-          onSuccess={() => {
-            // Refresh posts or update profile
-          }}
-        />
       </div>
     </Layout>
   );
