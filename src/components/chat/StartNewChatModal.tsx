@@ -45,21 +45,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         // Get accepted friendships where user is involved
         const { data: friendships, error } = await supabase
           .from('friendships')
-          .select(`
-            *,
-            requester_profile:profiles!friendships_requester_id_fkey(
-              user_id,
-              display_name,
-              avatar_url,
-              pronouns
-            ),
-            addressee_profile:profiles!friendships_addressee_id_fkey(
-              user_id,
-              display_name,
-              avatar_url,
-              pronouns
-            )
-          `)
+          .select('id, requester_id, addressee_id, status, created_at, updated_at')
           .eq('status', 'accepted')
           .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
@@ -68,25 +54,41 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           return;
         }
 
-        // Map friendships to friend users
-        const friends: User[] = [];
-        friendships?.forEach(friendship => {
-          const isRequester = friendship.requester_id === user.id;
-          const friendProfile = isRequester 
-            ? friendship.addressee_profile 
-            : friendship.requester_profile;
-          
-          if (friendProfile && 
-              (friendProfile.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               !searchQuery)) {
-            friends.push({
-              id: friendProfile.user_id,
-              display_name: friendProfile.display_name || 'Unknown User',
-              avatar_url: friendProfile.avatar_url,
-              pronouns: friendProfile.pronouns
-            });
-          }
-        });
+        // Get friend user IDs
+        const friendIds = friendships?.map(friendship => {
+          return friendship.requester_id === user.id 
+            ? friendship.addressee_id 
+            : friendship.requester_id;
+        }) || [];
+
+        if (friendIds.length === 0) {
+          setAvailableUsers([]);
+          return;
+        }
+
+        // Get profiles for friends
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, avatar_url, pronouns')
+          .in('user_id', friendIds);
+
+        if (profileError) {
+          toast.error('Failed to load friend profiles');
+          return;
+        }
+
+        // Filter by search query and map to User interface
+        const friends: User[] = profiles
+          ?.filter(profile => 
+            !searchQuery || 
+            profile.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map(profile => ({
+            id: profile.user_id,
+            display_name: profile.display_name || 'Unknown User',
+            avatar_url: profile.avatar_url,
+            pronouns: profile.pronouns
+          })) || [];
 
         setAvailableUsers(friends);
       } catch (error) {

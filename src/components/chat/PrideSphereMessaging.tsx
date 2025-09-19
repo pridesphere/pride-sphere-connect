@@ -45,6 +45,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import StartNewChatModal from './StartNewChatModal';
+import FriendRequestModal from '@/components/friends/FriendRequestModal';
 
 interface Message {
   id: string;
@@ -125,13 +127,12 @@ export default function PrideSphereMessaging() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [pendingMedia, setPendingMedia] = useState<File | null>(null);
-  const [showNewChat, setShowNewChat] = useState(false);
-  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showStartChatModal, setShowStartChatModal] = useState(false);
+  const [showFriendRequestModal, setShowFriendRequestModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [safeMode, setSafeMode] = useState(true);
   const [typing, setTyping] = useState<string | null>(null);
-  const [newChatUsername, setNewChatUsername] = useState("");
 
   // Data State
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -328,6 +329,11 @@ export default function PrideSphereMessaging() {
     }
   };
 
+  const handleChatCreated = (conversationId: string) => {
+    setActiveChatId(conversationId);
+    loadConversations();
+  };
+
   const createConversation = async (isGroup: boolean = false, name?: string) => {
     if (!user) return;
 
@@ -363,12 +369,6 @@ export default function PrideSphereMessaging() {
       // Reload conversations
       await loadConversations();
       setActiveChatId(conversation.id);
-      
-      if (isGroup) {
-        setShowNewGroup(false);
-      } else {
-        setShowNewChat(false);
-      }
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast({
@@ -529,56 +529,22 @@ export default function PrideSphereMessaging() {
               Messages
             </div>
             <div className="flex items-center gap-2">
-              <Dialog open={showNewChat} onOpenChange={setShowNewChat}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="secondary" className="rounded-2xl">
-                    <UserPlus className="h-4 w-4 mr-1" /> New
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Start a private chat</DialogTitle>
-                    <DialogDescription>
-                      Create a new conversation. You can add participants later.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    <Button className="w-full" onClick={() => createConversation(false)}>
-                      Create Direct Message
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={showNewGroup} onOpenChange={setShowNewGroup}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="rounded-2xl">
-                    <Users className="h-4 w-4 mr-1" /> Group
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create a group chat</DialogTitle>
-                    <DialogDescription>Safe, moderated spaces for your community.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-3">
-                    <Label htmlFor="gname">Group name</Label>
-                    <Input 
-                      id="gname" 
-                      placeholder="Trans Support 🏳️‍⚧️" 
-                      value={newChatUsername}
-                      onChange={(e) => setNewChatUsername(e.target.value)}
-                    />
-                    <Button 
-                      className="w-full" 
-                      onClick={() => createConversation(true, newChatUsername)}
-                      disabled={!newChatUsername.trim()}
-                    >
-                      Create Group
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-2xl"
+                onClick={() => setShowFriendRequestModal(true)}
+              >
+                <UserPlus className="h-4 w-4 mr-1" /> Add Friends
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => setShowStartChatModal(true)}
+              >
+                <MessageSquarePlus className="h-4 w-4 mr-1" /> New Chat
+              </Button>
             </div>
           </CardTitle>
 
@@ -843,6 +809,17 @@ export default function PrideSphereMessaging() {
           </>
         )}
       </Card>
+
+      <StartNewChatModal
+        isOpen={showStartChatModal}
+        onClose={() => setShowStartChatModal(false)}
+        onChatCreated={handleChatCreated}
+      />
+
+      <FriendRequestModal
+        isOpen={showFriendRequestModal}
+        onClose={() => setShowFriendRequestModal(false)}
+      />
     </div>
   );
 }

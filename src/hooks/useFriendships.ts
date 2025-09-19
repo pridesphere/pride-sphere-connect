@@ -56,23 +56,33 @@ export const useFriendships = () => {
       const { data: friendships, error } = await supabase
         .from('friendships')
         .select(`
-          *,
-          requester_profile:profiles!friendships_requester_id_fkey(
-            display_name,
-            username,
-            avatar_url,
-            pronouns
-          ),
-          addressee_profile:profiles!friendships_addressee_id_fkey(
-            display_name,
-            username,
-            avatar_url,
-            pronouns
-          )
+          id,
+          requester_id,
+          addressee_id,
+          status,
+          created_at,
+          updated_at
         `)
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
       if (error) throw error;
+
+      // Get profiles for all users involved in friendships
+      const userIds = new Set<string>();
+      friendships?.forEach(friendship => {
+        userIds.add(friendship.requester_id);
+        userIds.add(friendship.addressee_id);
+      });
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, username, avatar_url, pronouns')
+        .in('user_id', Array.from(userIds));
+
+      if (profileError) throw profileError;
+
+      // Create profile map
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       // Separate into different categories
       const accepted: Friend[] = [];
@@ -80,12 +90,19 @@ export const useFriendships = () => {
       const sent: Friendship[] = [];
 
       friendships?.forEach(friendship => {
+        const requesterProfile = profileMap.get(friendship.requester_id);
+        const addresseeProfile = profileMap.get(friendship.addressee_id);
+
+        const friendshipWithProfiles = {
+          ...friendship,
+          requester_profile: requesterProfile,
+          addressee_profile: addresseeProfile
+        } as Friendship;
+
         if (friendship.status === 'accepted') {
           // Add the other person as a friend
           const isRequester = friendship.requester_id === user.id;
-          const friendProfile = isRequester 
-            ? friendship.addressee_profile 
-            : friendship.requester_profile;
+          const friendProfile = isRequester ? addresseeProfile : requesterProfile;
           
           if (friendProfile) {
             accepted.push({
@@ -99,10 +116,10 @@ export const useFriendships = () => {
         } else if (friendship.status === 'pending') {
           if (friendship.addressee_id === user.id) {
             // Received request
-            pending.push(friendship);
+            pending.push(friendshipWithProfiles);
           } else {
             // Sent request
-            sent.push(friendship);
+            sent.push(friendshipWithProfiles);
           }
         }
       });
