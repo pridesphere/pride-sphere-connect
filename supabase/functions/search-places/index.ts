@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== Search Places Function Called ===')
+    console.log('=== Search Places Function Called (New Places API) ===')
     const body = await req.json()
     console.log('Request body:', JSON.stringify(body))
     
@@ -41,82 +41,59 @@ serve(async (req) => {
 
     console.log('✅ API Key found, length:', apiKey.length)
 
-    // Try Text Search API first (more basic, more likely to work)
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
-    const params = new URLSearchParams({
-      query: query,
-      key: apiKey,
-      fields: 'place_id,name,formatted_address,geometry'
+    // Use the NEW Places API (Text Search) endpoint
+    const url = 'https://places.googleapis.com/v1/places:searchText'
+    
+    const requestBody = {
+      textQuery: query,
+      languageCode: 'en',
+      maxResultCount: 10,
+      locationBias: {
+        rectangle: {
+          low: {
+            latitude: -90,
+            longitude: -180
+          },
+          high: {
+            latitude: 90,
+            longitude: 180
+          }
+        }
+      }
+    }
+    
+    console.log('🌐 Making request to NEW Places API:', url)
+    console.log('📤 Request body:', JSON.stringify(requestBody, null, 2))
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types'
+      },
+      body: JSON.stringify(requestBody)
     })
     
-    const url = `${baseUrl}?${params.toString()}`
-    console.log('🌐 Making request to:', url.replace(apiKey, 'API_KEY_HIDDEN'))
-    
-    const response = await fetch(url)
     console.log('📡 Response status:', response.status)
     console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
     
     if (!response.ok) {
-      console.error('❌ HTTP Error:', response.status, response.statusText)
       const errorText = await response.text()
+      console.error('❌ HTTP Error:', response.status, response.statusText)
       console.error('❌ Error body:', errorText)
       
-      return new Response(
-        JSON.stringify({ 
-          error: `HTTP ${response.status}: ${response.statusText}`,
-          details: errorText 
-        }),
-        {
-          status: 200, // Return 200 so the frontend gets the error message
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    const data = await response.json()
-    console.log('📄 API Response status:', data.status)
-    console.log('📄 API Response data:', JSON.stringify(data, null, 2))
-
-    if (data.status === 'REQUEST_DENIED') {
-      console.error('❌ REQUEST_DENIED - API Key issue')
-      console.error('Error message:', data.error_message)
-      
-      let fixMessage = 'Check that Places API is enabled in Google Cloud Console'
-      if (data.error_message?.includes('billing')) {
-        fixMessage = 'Enable billing in Google Cloud Console'
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      if (errorText.includes('API_KEY_INVALID')) {
+        errorMessage = 'Invalid API key'
+      } else if (errorText.includes('PERMISSION_DENIED')) {
+        errorMessage = 'Permission denied - check API key restrictions'
       }
       
       return new Response(
         JSON.stringify({ 
-          error: `API Access Denied: ${data.error_message || fixMessage}`,
-          places: [] 
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    if (data.status === 'OVER_QUERY_LIMIT') {
-      console.error('❌ OVER_QUERY_LIMIT')
-      return new Response(
-        JSON.stringify({ 
-          error: 'API quota exceeded. Try again later.',
-          places: [] 
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('❌ Google Places API error:', data.status, data.error_message)
-      return new Response(
-        JSON.stringify({ 
-          error: `API Error: ${data.status} - ${data.error_message || 'Unknown error'}`,
+          error: errorMessage,
+          details: errorText,
           places: []
         }),
         {
@@ -126,16 +103,24 @@ serve(async (req) => {
       )
     }
 
-    // Transform the text search results
-    const places = data.results?.map((place: any) => ({
-      place_id: place.place_id,
-      name: place.name,
-      formatted_address: place.formatted_address,
-      geometry: place.geometry,
-      types: place.types,
+    const data = await response.json()
+    console.log('📄 NEW API Response:', JSON.stringify(data, null, 2))
+
+    // Transform the NEW API results to match our expected format
+    const places = data.places?.map((place: any) => ({
+      place_id: place.id,
+      name: place.displayName?.text || 'Unknown Location',
+      formatted_address: place.formattedAddress || 'Address not available',
+      geometry: place.location ? {
+        location: {
+          lat: place.location.latitude,
+          lng: place.location.longitude
+        }
+      } : null,
+      types: place.types || [],
     })) || []
 
-    console.log(`✅ Returning ${places.length} places`)
+    console.log(`✅ Returning ${places.length} places from NEW API`)
     
     return new Response(
       JSON.stringify({ places }),
@@ -151,7 +136,7 @@ serve(async (req) => {
         places: []
       }),
       {
-        status: 200, // Return 200 so frontend gets the error
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
