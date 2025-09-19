@@ -11,7 +11,7 @@ import { usePosts } from "@/hooks/usePosts";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"feed" | "wellness">("feed");
-  const { posts, loading } = usePosts();
+  const { posts, loading, refetch } = usePosts();
 
   return (
     <Layout>
@@ -54,7 +54,7 @@ const Index = () => {
         {activeTab === "feed" && (
           <div className="space-y-6">
             {/* Create Post */}
-            <CreatePost />
+            <CreatePost onSuccess={refetch} />
             
             {/* Feed */}
             <div className="space-y-6">

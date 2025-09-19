@@ -11,7 +11,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import LocationSearchModal from "./LocationSearchModal";
 
-const CreatePost = () => {
+interface CreatePostProps {
+  onSuccess?: () => void;
+}
+
+const CreatePost: React.FC<CreatePostProps> = ({ onSuccess }) => {
   const [postContent, setPostContent] = useState("");
   const [selectedMood, setSelectedMood] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -134,6 +138,11 @@ const CreatePost = () => {
       toast.success("✨ Your story is now shining on the feed!", {
         description: "Your magical post is live!"
       });
+      
+      // Call onSuccess callback to refresh the feed
+      if (onSuccess) {
+        onSuccess();
+      }
       
       // Reset form
       setPostContent("");
