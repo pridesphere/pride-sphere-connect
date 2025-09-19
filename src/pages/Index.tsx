@@ -6,7 +6,7 @@ import MentalHealthTools from "@/components/wellness/MentalHealthTools";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Sparkles, Plus } from "lucide-react";
+import { Sparkles, Plus } from "lucide-react";
 import { usePosts } from "@/hooks/usePosts";
 
 const Index = () => {
@@ -94,16 +94,6 @@ const Index = () => {
           <MentalHealthTools />
         )}
 
-        {/* Quick Actions Floating */}
-        <div className="fixed bottom-6 right-6 space-y-3">
-          <Button 
-            variant="hero" 
-            size="icon" 
-            className="w-14 h-14 rounded-full shadow-magical hover:shadow-glow"
-          >
-            <MessageCircle className="w-6 h-6" />
-          </Button>
-        </div>
       </div>
     </Layout>
   );
