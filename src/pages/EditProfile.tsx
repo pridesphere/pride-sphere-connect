@@ -34,6 +34,7 @@ const EditProfile = () => {
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   // Update form data when profile loads
   useEffect(() => {
@@ -88,6 +89,49 @@ const EditProfile = () => {
     setFormData(prev => ({ ...prev, location }));
     setShowLocationModal(false);
     toast.success("📍 Location updated!");
+  };
+
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingBanner(true);
+    
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/banner.${fileExt}`;
+
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('community-banners')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('community-banners')
+        .getPublicUrl(fileName);
+
+      // Update profile with new banner URL
+      const result = await updateProfile({ banner_url: data.publicUrl });
+      
+      if (result?.success) {
+        toast.success("✨ Cover banner updated!", {
+          description: "Your new background looks amazing!"
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
+    } catch (error) {
+      console.error('Banner upload error:', error);
+      toast.error("Failed to update cover banner. Please try again.");
+    } finally {
+      setUploadingBanner(false);
+    }
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,14 +260,31 @@ const EditProfile = () => {
             <h1 className="text-3xl font-bold pride-text">✨ Express Yourself, Darling</h1>
           </div>
 
-          <Card className="shadow-magical">
-            <CardHeader>
-              <CardTitle className="text-center">Your Rainbow Identity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <Card className="shadow-magical overflow-hidden">
+            {/* Banner Section */}
+            <div 
+              className="relative h-32 bg-gradient-subtle cursor-pointer group"
+              style={{
+                backgroundImage: profile?.banner_url ? `url(${profile.banner_url})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+              onClick={() => bannerInputRef.current?.click()}
+            >
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                <div className="text-white/80 group-hover:text-white transition-colors text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2" />
+                  <p className="text-sm font-medium">
+                    {uploadingBanner ? "Uploading..." : profile?.banner_url ? "Change Cover" : "Add Cover Photo"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <CardContent className="space-y-6 pt-6">
               {/* Profile Picture Section */}
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-24 h-24">
+              <div className="flex flex-col items-center space-y-4 -mt-16">
+                <Avatar className="w-24 h-24 border-4 border-background">
                   <AvatarImage src={profile?.avatar_url || ""} />
                   <AvatarFallback className="bg-gradient-pride text-white font-bold text-xl">
                     {getUserInitials()}
@@ -243,9 +304,10 @@ const EditProfile = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Cover Banner
+                    {uploadingBanner ? "Uploading..." : "Cover Banner"}
                   </Button>
                 </div>
               </div>
@@ -375,6 +437,7 @@ const EditProfile = () => {
             type="file"
             accept="image/*"
             className="hidden"
+            onChange={handleBannerUpload}
           />
 
           {/* Location Search Modal */}
