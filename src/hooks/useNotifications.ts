@@ -3,14 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 
-interface Notification {
+export interface Notification {
   id: string;
   user_id: string;
   title: string;
   message: string;
+  type: string;
+  related_id: string | null;
+  data: any | null;
   link: string | null;
   is_read: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export const useNotifications = () => {
@@ -34,19 +38,17 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      // For now, we'll show empty notifications until we have a proper notifications table
-      // In production, this would be:
-      // const { data: notifications, error } = await supabase
-      //   .from('notifications')
-      //   .select('*')
-      //   .eq('user_id', user.id)
-      //   .order('created_at', { ascending: false });
+      // Fetch notifications from the database
+      const { data: notifications, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-      // Set to empty array instead of mock data
-      const mockNotifications: Notification[] = [];
+      if (error) throw error;
 
-      setNotifications(mockNotifications);
-      setUnreadCount(mockNotifications.filter(n => !n.is_read).length);
+      setNotifications(notifications || []);
+      setUnreadCount((notifications || []).filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -81,14 +83,14 @@ export const useNotifications = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // In production, this would update the database:
-      // await supabase
-      //   .from('notifications')
-      //   .update({ is_read: true })
-      //   .eq('id', notificationId)
-      //   .eq('user_id', user?.id);
+      // Update in database
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('user_id', user?.id);
 
-      // For now, update local state
+      // Update local state
       setNotifications(prev =>
         prev.map(notification =>
           notification.id === notificationId
@@ -106,14 +108,14 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      // In production, this would update the database:
-      // await supabase
-      //   .from('notifications')
-      //   .update({ is_read: true })
-      //   .eq('user_id', user.id)
-      //   .eq('is_read', false);
+      // Update in database
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
 
-      // For now, update local state
+      // Update local state
       setNotifications(prev =>
         prev.map(notification => ({ ...notification, is_read: true }))
       );

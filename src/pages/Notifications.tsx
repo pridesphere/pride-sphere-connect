@@ -5,13 +5,15 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Check, CheckCheck, ArrowLeft } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useToast } from '@/hooks/use-toast';
+import NotificationActions from '@/components/notifications/NotificationActions';
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useNotifications();
   const { toast } = useToast();
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
 
@@ -23,6 +25,11 @@ const Notifications = () => {
     if (notification.link) {
       navigate(notification.link);
     }
+  };
+
+  const handleActionComplete = () => {
+    // Refresh notifications after an action is completed
+    refetch();
   };
 
   const handleMarkAllRead = async () => {
@@ -115,35 +122,52 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <Card 
                 key={notification.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                className={`transition-all duration-200 hover:shadow-lg ${
                   !notification.is_read 
                     ? 'bg-primary/5 border-primary/20 shadow-glow' 
                     : 'hover:bg-muted/30'
                 }`}
-                onClick={() => handleNotificationClick(notification)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">
-                          {notification.title}
-                        </h4>
-                        {!notification.is_read && (
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        )}
+                    <div className="flex items-start space-x-3 flex-1">
+                      {notification.data?.requester_avatar || notification.data?.friend_avatar ? (
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={notification.data?.requester_avatar || notification.data?.friend_avatar} />
+                          <AvatarFallback>
+                            {(notification.data?.requester_name || notification.data?.friend_name)?.charAt(0)?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Bell className="w-5 h-5 text-primary" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">
+                            {notification.title}
+                          </h4>
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        <NotificationActions 
+                          notification={notification}
+                          onActionComplete={handleActionComplete}
+                        />
                       </div>
-                      <p className="text-muted-foreground text-sm">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(notification.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
                     </div>
                     
                     {!notification.is_read && (
