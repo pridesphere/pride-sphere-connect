@@ -71,6 +71,16 @@ interface Conversation {
   created_by: string;
   created_at: string;
   updated_at: string;
+  last_message?: {
+    content: string;
+    created_at: string;
+    user_id: string;
+    user?: {
+      display_name?: string;
+      username?: string;
+    };
+  };
+  unread_count?: number;
   participants?: Array<{
     user_id: string;
     user: {
@@ -181,6 +191,19 @@ export default function PrideSphereMessaging() {
             loadConversations();
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages'
+          },
+          (payload) => {
+            console.log('Message change:', payload);
+            // Reload conversations to update last message previews
+            loadConversations();
+          }
+        )
         .subscribe();
 
       return () => {
@@ -243,9 +266,10 @@ export default function PrideSphereMessaging() {
       // Then get all participants for these conversations
       const conversationIds = conversations?.map(c => c.id) || [];
       
-      let conversationsWithParticipants = conversations || [];
+      let conversationsWithData = conversations || [];
       
       if (conversationIds.length > 0) {
+        // Get participants
         const { data: participants, error: partError } = await supabase
           .from('conversation_participants')
           .select(`
@@ -265,11 +289,37 @@ export default function PrideSphereMessaging() {
 
         if (profileError) throw profileError;
 
+        // Get last messages for each conversation
+        const { data: lastMessages, error: lastMsgError } = await supabase
+          .from('messages')
+          .select(`
+            id,
+            conversation_id,
+            content,
+            created_at,
+            user_id
+          `)
+          .in('conversation_id', conversationIds)
+          .order('created_at', { ascending: false });
+
+        if (lastMsgError) throw lastMsgError;
+
         // Create a map of user profiles
         const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        
+        // Create a map of last messages per conversation
+        const lastMessageMap = new Map();
+        lastMessages?.forEach(msg => {
+          if (!lastMessageMap.has(msg.conversation_id)) {
+            lastMessageMap.set(msg.conversation_id, {
+              ...msg,
+              user: profileMap.get(msg.user_id)
+            });
+          }
+        });
 
         // Combine the data
-        conversationsWithParticipants = conversations.map(conv => ({
+        conversationsWithData = conversations.map(conv => ({
           ...conv,
           participants: participants
             ?.filter(p => p.conversation_id === conv.id)
@@ -281,16 +331,18 @@ export default function PrideSphereMessaging() {
                 avatar_url: undefined,
                 pronouns: undefined
               }
-            })) || []
+            })) || [],
+          last_message: lastMessageMap.get(conv.id),
+          unread_count: 0 // TODO: Implement proper unread count logic
         }));
       }
 
-      setConversations(conversationsWithParticipants);
+      setConversations(conversationsWithData);
       
       // Auto-select first conversation if none selected or if we just created one
-      if ((!activeChatId && conversationsWithParticipants.length > 0) || 
-          (conversationsWithParticipants.length === 1 && !activeChatId)) {
-        setActiveChatId(conversationsWithParticipants[0].id);
+      if ((!activeChatId && conversationsWithData.length > 0) || 
+          (conversationsWithData.length === 1 && !activeChatId)) {
+        setActiveChatId(conversationsWithData[0].id);
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -647,15 +699,33 @@ export default function PrideSphereMessaging() {
                           </p>
                         </div>
                         <div className="text-xs text-slate-400 truncate">
-                          {isDm && pronouns ? (
+                          {conversation.last_message ? (
+                            <span>
+                              {conversation.last_message.user_id === user.id ? 'You: ' : ''}
+                              {conversation.last_message.content.length > 30 
+                                ? conversation.last_message.content.substring(0, 30) + '...'
+                                : conversation.last_message.content
+                              }
+                            </span>
+                          ) : isDm && pronouns ? (
                             <span>{pronouns}</span>
                           ) : (
                             <span>{conversation.participants?.length || 0} members</span>
                           )}
                         </div>
                       </div>
-                      <div className="text-xs text-slate-500">
-                        {formatTime(conversation.updated_at)}
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="text-xs text-slate-500">
+                          {conversation.last_message 
+                            ? formatTime(conversation.last_message.created_at)
+                            : formatTime(conversation.updated_at)
+                          }
+                        </div>
+                        {conversation.unread_count && conversation.unread_count > 0 && (
+                          <Badge variant="default" className="text-xs px-1.5 py-0 min-w-[20px] h-5 rounded-full bg-primary text-primary-foreground">
+                            {conversation.unread_count > 99 ? '99+' : conversation.unread_count}
+                          </Badge>
+                        )}
                       </div>
                     </button>
                   );
