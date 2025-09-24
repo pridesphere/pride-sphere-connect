@@ -150,19 +150,25 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   const createConversation = async () => {
     if (selectedUsers.length === 0 || !user) {
       console.log('Early return - no users selected or no user');
-      alert('Early return - no users selected or no user');
+      toast({
+        title: "Error",
+        description: "Please select users and ensure you're logged in",
+        variant: "destructive"
+      });
       return;
     }
 
-    console.log('=== STARTING CONVERSATION CREATION ===');
-    alert('Starting conversation creation!');
     setLoading(true);
     console.log('Creating conversation with users:', selectedUsers);
     console.log('Current user:', user.id);
-    console.log('Is group chat:', isGroupChat);
     
     try {
-      console.log('=== STEP 1: Check for existing conversations ===');
+      // Check authentication state
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('User not authenticated');
+      }
+
       // Check if direct conversation already exists (for non-group chats)
       if (!isGroupChat && selectedUsers.length === 1) {
         console.log('Checking for existing DM...');
@@ -171,44 +177,35 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .select('id, conversation_participants!inner(user_id)')
           .eq('is_group', false);
 
-        if (checkError) {
-          console.error('Error checking existing conversations:', checkError);
-          alert('Error checking existing conversations: ' + JSON.stringify(checkError));
-        } else {
-          console.log('Existing conversations found:', existingConv?.length || 0);
-        }
-
-        // Check if there's already a DM between these two users
-        const existingDM = existingConv?.find(conv => {
-          const participantIds = conv.conversation_participants.map(p => p.user_id);
-          return participantIds.length === 2 && 
-                 participantIds.includes(user.id) && 
-                 participantIds.includes(selectedUsers[0]);
-        });
-
-        if (existingDM) {
-          console.log('Found existing DM:', existingDM.id);
-          alert('Found existing DM: ' + existingDM.id);
-          toast({
-            title: "Success",
-            description: "Opening existing conversation!"
+        if (!checkError) {
+          // Check if there's already a DM between these two users
+          const existingDM = existingConv?.find(conv => {
+            const participantIds = conv.conversation_participants.map(p => p.user_id);
+            return participantIds.length === 2 && 
+                   participantIds.includes(user.id) && 
+                   participantIds.includes(selectedUsers[0]);
           });
-          onChatCreated(existingDM.id);
-          onClose();
-          resetForm();
-          return;
+
+          if (existingDM) {
+            console.log('Found existing DM:', existingDM.id);
+            toast({
+              title: "Success",
+              description: "Opening existing conversation!"
+            });
+            onChatCreated(existingDM.id);
+            onClose();
+            resetForm();
+            return;
+          }
         }
       }
 
-      console.log('=== STEP 2: Create new conversation ===');
-      alert('Creating new conversation...');
       // Create new conversation
       const conversationData = {
         is_group: isGroupChat,
         name: isGroupChat ? groupName || `Group with ${selectedUsers.length} members` : null,
-        created_by: user.id
+        created_by: session.user.id // Use session user id directly
       };
-      console.log('Conversation data:', conversationData);
 
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
@@ -218,24 +215,18 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
       if (convError) {
         console.error('Error creating conversation:', convError);
-        alert('Error creating conversation: ' + JSON.stringify(convError));
         throw convError;
       }
 
       console.log('Conversation created:', conversation);
-      alert('Conversation created with ID: ' + conversation.id);
 
-      console.log('=== STEP 3: Add participants ===');
       // Add participants (current user + selected users)
-      const participants = [user.id, ...selectedUsers];
-      console.log('Adding participants:', participants);
-      alert('Adding participants: ' + participants.join(', '));
+      const participants = [session.user.id, ...selectedUsers];
       
       const participantInserts = participants.map(userId => ({
         conversation_id: conversation.id,
         user_id: userId
       }));
-      console.log('Participant inserts:', participantInserts);
 
       const { error: participantError } = await supabase
         .from('conversation_participants')
@@ -243,44 +234,27 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
       if (participantError) {
         console.error('Error adding participants:', participantError);
-        alert('Error adding participants: ' + JSON.stringify(participantError));
         throw participantError;
       }
 
-      console.log('Participants added successfully');
-      alert('Participants added successfully!');
-
-      console.log('=== STEP 4: Send welcome message ===');
-      // Send welcome message (optional, don't fail if this fails)
+      // Send welcome message (optional)
       try {
         const welcomeMessage = isGroupChat 
           ? "🎉 Welcome to your new safe space!"
           : "💕 Start sharing your thoughts!";
 
-        const { error: messageError } = await supabase
+        await supabase
           .from('messages')
           .insert({
             conversation_id: conversation.id,
-            user_id: user.id,
+            user_id: session.user.id,
             content: welcomeMessage,
             message_type: 'text'
           });
-
-        if (messageError) {
-          console.warn('Failed to send welcome message:', messageError);
-          alert('Failed to send welcome message: ' + JSON.stringify(messageError));
-        } else {
-          console.log('Welcome message sent');
-          alert('Welcome message sent!');
-        }
       } catch (messageError) {
         console.warn('Failed to send welcome message:', messageError);
-        alert('Failed to send welcome message (caught): ' + JSON.stringify(messageError));
-        // Don't fail the whole operation if welcome message fails
       }
 
-      console.log('=== SUCCESS: Conversation created successfully ===');
-      alert('SUCCESS! Conversation created: ' + conversation.id);
       toast({
         title: "Success",
         description: `✨ ${isGroupChat ? 'Group chat' : 'Chat'} created successfully!`
@@ -290,8 +264,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       resetForm();
       
     } catch (error) {
-      console.error('=== ERROR: Failed to create conversation ===', error);
-      alert('ERROR: Failed to create conversation: ' + JSON.stringify(error));
+      console.error('Failed to create conversation:', error);
       toast({
         title: "Error",
         description: "Failed to create conversation. Please try again.",
@@ -299,7 +272,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       });
     } finally {
       setLoading(false);
-      console.log('=== CONVERSATION CREATION FINISHED ===');
     }
   };
 
