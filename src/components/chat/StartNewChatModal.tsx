@@ -31,7 +31,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  console.log('StartNewChatModal rendered:', { isOpen, user: user?.id });
   const [searchQuery, setSearchQuery] = useState('');
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -42,11 +41,8 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   // Fetch friends only (users who have accepted friend requests)
   useEffect(() => {
     if (!isOpen || !user) {
-      console.log('Modal not open or no user:', { isOpen, user: !!user });
       return;
     }
-
-    console.log('Fetching friends for user:', user.id);
 
     const fetchFriends = async () => {
       try {
@@ -57,10 +53,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .eq('status', 'accepted')
           .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
-        console.log('Friendships query result:', { friendships, error });
-
         if (error) {
-          console.error('Error fetching friendships:', error);
           toast({
             title: "Error",
             description: "Failed to load friends",
@@ -69,8 +62,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           return;
         }
 
-        console.log('Found friendships:', friendships?.length || 0);
-
         // Get friend user IDs
         const friendIds = friendships?.map(friendship => {
           return friendship.requester_id === user.id 
@@ -78,10 +69,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
             : friendship.requester_id;
         }) || [];
 
-        console.log('Friend IDs:', friendIds);
-
         if (friendIds.length === 0) {
-          console.log('No friends found');
           setAvailableUsers([]);
           return;
         }
@@ -92,10 +80,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .select('user_id, display_name, avatar_url, pronouns')
           .in('user_id', friendIds);
 
-        console.log('Profiles query result:', { profiles, profileError });
-
         if (profileError) {
-          console.error('Error fetching profiles:', profileError);
           toast({
             title: "Error",
             description: "Failed to load friend profiles",
@@ -117,10 +102,8 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
             pronouns: profile.pronouns
           })) || [];
 
-        console.log('Final friends list:', friends);
         setAvailableUsers(friends);
       } catch (error) {
-        console.error('Error loading friends:', error);
         toast({
           title: "Error",
           description: "Failed to load friends",
@@ -133,14 +116,12 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   }, [isOpen, user, searchQuery]);
 
   const handleUserSelection = (userId: string) => {
-    console.log('Selecting user:', userId);
     setSelectedUsers(prev => {
       const isSelected = prev.includes(userId);
       const newSelection = isSelected 
         ? prev.filter(id => id !== userId)
         : [...prev, userId];
       
-      console.log('New selection:', newSelection);
       // Auto-enable group chat if more than 1 user selected
       setIsGroupChat(newSelection.length > 1);
       return newSelection;
@@ -149,7 +130,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
   const createConversation = async () => {
     if (selectedUsers.length === 0 || !user) {
-      console.log('Early return - no users selected or no user');
       toast({
         title: "Error",
         description: "Please select users and ensure you're logged in",
@@ -159,8 +139,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
     }
 
     setLoading(true);
-    console.log('Creating conversation with users:', selectedUsers);
-    console.log('Current user:', user.id);
     
     try {
       // Check authentication state
@@ -171,7 +149,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
       // Check if direct conversation already exists (for non-group chats)
       if (!isGroupChat && selectedUsers.length === 1) {
-        console.log('Checking for existing DM...');
         const { data: existingConv, error: checkError } = await supabase
           .from('conversations')
           .select('id, conversation_participants!inner(user_id)')
@@ -187,7 +164,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           });
 
           if (existingDM) {
-            console.log('Found existing DM:', existingDM.id);
             toast({
               title: "Success",
               description: "Opening existing conversation!"
@@ -214,11 +190,8 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         .single();
 
       if (convError) {
-        console.error('Error creating conversation:', convError);
         throw convError;
       }
-
-      console.log('Conversation created:', conversation);
 
       // Add participants (current user + selected users)
       const participants = [session.user.id, ...selectedUsers];
@@ -233,7 +206,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         .insert(participantInserts);
 
       if (participantError) {
-        console.error('Error adding participants:', participantError);
         throw participantError;
       }
 
@@ -252,7 +224,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
             message_type: 'text'
           });
       } catch (messageError) {
-        console.warn('Failed to send welcome message:', messageError);
+        // Silently handle welcome message errors
       }
 
       toast({
@@ -264,7 +236,6 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       resetForm();
       
     } catch (error) {
-      console.error('Failed to create conversation:', error);
       toast({
         title: "Error",
         description: "Failed to create conversation. Please try again.",
@@ -376,12 +347,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                console.log('Start Chat button clicked!');
-                console.log('Selected users:', selectedUsers);
-                console.log('Current user:', user?.id);
-                createConversation();
-              }}
+              onClick={createConversation}
               disabled={selectedUsers.length === 0 || loading}
               className="flex-1"
             >
