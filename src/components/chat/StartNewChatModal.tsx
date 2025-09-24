@@ -131,12 +131,14 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   }, [isOpen, user, searchQuery]);
 
   const handleUserSelection = (userId: string) => {
+    console.log('Selecting user:', userId);
     setSelectedUsers(prev => {
       const isSelected = prev.includes(userId);
       const newSelection = isSelected 
         ? prev.filter(id => id !== userId)
         : [...prev, userId];
       
+      console.log('New selection:', newSelection);
       // Auto-enable group chat if more than 1 user selected
       setIsGroupChat(newSelection.length > 1);
       return newSelection;
