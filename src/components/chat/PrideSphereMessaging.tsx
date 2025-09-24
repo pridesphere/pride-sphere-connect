@@ -163,7 +163,8 @@ export default function PrideSphereMessaging() {
             schema: 'public',
             table: 'conversations'
           },
-          () => {
+          (payload) => {
+            console.log('Conversation change:', payload);
             loadConversations();
           }
         )
@@ -175,7 +176,8 @@ export default function PrideSphereMessaging() {
             table: 'conversation_participants',
             filter: `user_id=eq.${user.id}`
           },
-          () => {
+          (payload) => {
+            console.log('Participant change:', payload);
             loadConversations();
           }
         )
@@ -285,8 +287,9 @@ export default function PrideSphereMessaging() {
 
       setConversations(conversationsWithParticipants);
       
-      // Auto-select first conversation if none selected
-      if (!activeChatId && conversationsWithParticipants.length > 0) {
+      // Auto-select first conversation if none selected or if we just created one
+      if ((!activeChatId && conversationsWithParticipants.length > 0) || 
+          (conversationsWithParticipants.length === 1 && !activeChatId)) {
         setActiveChatId(conversationsWithParticipants[0].id);
       }
     } catch (error) {
@@ -361,9 +364,14 @@ export default function PrideSphereMessaging() {
     }
   };
 
-  const handleChatCreated = (conversationId: string) => {
+  const handleChatCreated = async (conversationId: string) => {
+    console.log('Chat created with ID:', conversationId);
     setActiveChatId(conversationId);
-    loadConversations();
+    
+    // Wait a bit for the database to be consistent
+    setTimeout(() => {
+      loadConversations();
+    }, 500);
   };
 
   const createConversation = async (isGroup: boolean = false, name?: string) => {

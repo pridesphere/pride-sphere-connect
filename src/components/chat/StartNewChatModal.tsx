@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Users, MessageCircle, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface User {
@@ -29,6 +29,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
   onChatCreated
 }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -50,7 +51,11 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
         if (error) {
-          toast.error('Failed to load friends');
+          toast({
+            title: "Error",
+            description: "Failed to load friends",
+            variant: "destructive"
+          });
           return;
         }
 
@@ -73,7 +78,11 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .in('user_id', friendIds);
 
         if (profileError) {
-          toast.error('Failed to load friend profiles');
+          toast({
+            title: "Error",
+            description: "Failed to load friend profiles",
+            variant: "destructive"
+          });
           return;
         }
 
@@ -92,7 +101,12 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
         setAvailableUsers(friends);
       } catch (error) {
-        toast.error('Failed to load friends');
+        console.error('Error loading friends:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load friends",
+          variant: "destructive"
+        });
       }
     };
 
@@ -133,7 +147,10 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         });
 
         if (existingDM) {
-          toast.success('Opening existing conversation!');
+          toast({
+            title: "Success",
+            description: "Opening existing conversation!"
+          });
           onChatCreated(existingDM.id);
           onClose();
           resetForm();
@@ -167,27 +184,41 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
 
       if (participantError) throw participantError;
 
-      // Send welcome message
-      const welcomeMessage = isGroupChat 
-        ? "🎉 Welcome to your new safe space!"
-        : "💕 Start sharing your thoughts!";
+      // Send welcome message (optional, don't fail if this fails)
+      try {
+        const welcomeMessage = isGroupChat 
+          ? "🎉 Welcome to your new safe space!"
+          : "💕 Start sharing your thoughts!";
 
-      await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          user_id: user.id,
-          content: welcomeMessage,
-          message_type: 'system'
-        });
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversation.id,
+            user_id: user.id,
+            content: welcomeMessage,
+            message_type: 'text'
+          });
+      } catch (messageError) {
+        console.warn('Failed to send welcome message:', messageError);
+        // Don't fail the whole operation if welcome message fails
+      }
 
-      toast.success(`✨ ${isGroupChat ? 'Group chat' : 'Chat'} created successfully!`);
+      console.log('Conversation created successfully:', conversation.id);
+      toast({
+        title: "Success",
+        description: `✨ ${isGroupChat ? 'Group chat' : 'Chat'} created successfully!`
+      });
       onChatCreated(conversation.id);
       onClose();
       resetForm();
       
     } catch (error) {
-      toast.error('Failed to create conversation');
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create conversation. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
