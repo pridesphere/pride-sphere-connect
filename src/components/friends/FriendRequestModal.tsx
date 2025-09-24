@@ -58,7 +58,11 @@ const FriendRequestModal = ({ isOpen, onClose }: FriendRequestModalProps) => {
           pronouns: profile.pronouns || ''
         })) || [];
 
-        setSearchResults(users);
+        // Filter out existing friends from search results
+        const friendIds = friends.map(friend => friend.id);
+        const filteredUsers = users.filter(user => !friendIds.includes(user.id));
+
+        setSearchResults(filteredUsers);
       } catch (error) {
         console.error('Error searching users:', error);
         toast.error('Failed to search users');

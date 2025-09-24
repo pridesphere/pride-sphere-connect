@@ -152,6 +152,38 @@ export default function PrideSphereMessaging() {
     if (user) {
       loadConversations();
       loadProfiles();
+      
+      // Subscribe to real-time conversation updates
+      const conversationChannel = supabase
+        .channel('user-conversations')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversations'
+          },
+          () => {
+            loadConversations();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversation_participants',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            loadConversations();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(conversationChannel);
+      };
     }
   }, [user]);
 
