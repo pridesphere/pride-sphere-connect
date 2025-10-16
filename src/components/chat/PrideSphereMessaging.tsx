@@ -419,11 +419,14 @@ export default function PrideSphereMessaging() {
   const handleChatCreated = async (conversationId: string) => {
     console.log('Chat created with ID:', conversationId);
     
-    // Immediately reload conversations
+    // Immediately select the new conversation (UI will show it)
+    setActiveChatId(conversationId);
+    
+    // Reload conversations in the background to populate the list
     await loadConversations();
     
-    // Then select the new conversation
-    setActiveChatId(conversationId);
+    // Load messages for the new conversation
+    await loadMessages(conversationId);
   };
 
   const createConversation = async (isGroup: boolean = false, name?: string) => {
@@ -504,11 +507,6 @@ export default function PrideSphereMessaging() {
 
       setDraft("");
       setPendingMedia(null);
-      
-      toast({
-        title: "Message sent",
-        description: "Your message has been delivered securely."
-      });
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -738,7 +736,7 @@ export default function PrideSphereMessaging() {
 
       {/* Main Chat Area */}
       <Card className="col-span-8 bg-slate-900/60 backdrop-blur border-slate-800 overflow-hidden">
-        {!activeConversation ? (
+        {!activeChatId ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-4">
               <MessageSquarePlus className="h-16 w-16 mx-auto text-slate-600" />
@@ -753,25 +751,47 @@ export default function PrideSphereMessaging() {
             <CardHeader className="border-b border-slate-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback>
-                      {activeConversation.is_group ? <Hash className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-slate-100">
-                      {activeConversation.is_group 
-                        ? activeConversation.name || "Group Chat"
-                        : (() => {
-                            const otherParticipant = activeConversation.participants?.find((p) => p.user_id !== user.id);
-                            return otherParticipant?.user?.display_name || otherParticipant?.user?.username || "Direct Message";
-                          })()
-                      }
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      {activeConversation.participants?.length || 0} members
-                    </p>
-                  </div>
+                  {(() => {
+                    const conv = activeConversation || conversations.find(c => c.id === activeChatId);
+                    const isDm = conv && !conv.is_group;
+                    const otherParticipant = isDm 
+                      ? conv.participants?.find((p) => p.user_id !== user.id)
+                      : null;
+                    
+                    const displayName = isDm 
+                      ? otherParticipant?.user?.display_name || otherParticipant?.user?.username || "Direct Message"
+                      : conv?.name || "Group Chat";
+                      
+                    const avatarUrl = isDm ? otherParticipant?.user?.avatar_url : undefined;
+                    const pronouns = isDm ? otherParticipant?.user?.pronouns : undefined;
+                    
+                    return (
+                      <>
+                        <Avatar className="h-12 w-12 border-2 border-primary/20">
+                          {isDm ? (
+                            <>
+                              <AvatarImage src={avatarUrl} />
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
+                                {initials(displayName)}
+                              </AvatarFallback>
+                            </>
+                          ) : (
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
+                              <Hash className="h-6 w-6" />
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold text-slate-100 text-lg">
+                            {displayName}
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            {pronouns || (conv?.participants?.length ? `${conv.participants.length} members` : 'Active now')}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 
                 {safeMode && (
@@ -786,7 +806,18 @@ export default function PrideSphereMessaging() {
             <CardContent className="p-0">
               <ScrollArea className="h-[56vh] px-3">
                 <div className="py-4 space-y-3">
-                  {messages.map((message) => {
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <MessageSquarePlus className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="text-slate-200 font-medium mb-1">Start the conversation</h4>
+                        <p className="text-slate-400 text-sm">Send a message to begin chatting</p>
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((message) => {
                     const isMine = message.user_id === user.id;
                     const author = message.user;
                     
@@ -854,8 +885,9 @@ export default function PrideSphereMessaging() {
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
 
                   <AnimatePresence>{typing && <TypingBubble />}</AnimatePresence>
 
@@ -864,9 +896,9 @@ export default function PrideSphereMessaging() {
               </ScrollArea>
 
               {/* Composer */}
-              <div className="border-t border-slate-800 p-3">
+              <div className="border-t border-slate-800 p-4 bg-slate-900/80">
                 <div className="flex items-end gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <label className="cursor-pointer">
                       <input
                         type="file"
@@ -874,18 +906,24 @@ export default function PrideSphereMessaging() {
                         accept="image/*"
                         onChange={(e) => setPendingMedia(e.target.files?.[0] || null)}
                       />
-                      <Button variant="ghost" size="icon" className="rounded-xl"><ImageIcon className="h-5 w-5" /></Button>
+                      <Button variant="ghost" size="icon" className="rounded-xl hover:bg-slate-800">
+                        <ImageIcon className="h-5 w-5 text-slate-400" />
+                      </Button>
                     </label>
-                    <Button variant="ghost" size="icon" className="rounded-xl"><Paperclip className="h-5 w-5" /></Button>
-                    <Button variant="ghost" size="icon" className="rounded-xl"><Mic className="h-5 w-5" /></Button>
+                    <Button variant="ghost" size="icon" className="rounded-xl hover:bg-slate-800">
+                      <Paperclip className="h-5 w-5 text-slate-400" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="rounded-xl hover:bg-slate-800">
+                      <Mic className="h-5 w-5 text-slate-400" />
+                    </Button>
                   </div>
 
                   <div className="flex-1">
                     <Textarea
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
-                      placeholder={safeMode ? "Message (previews hidden in Safe Mode)" : "Type your message..."}
-                      className="min-h-[48px] max-h-40 bg-slate-800/60 border-slate-700 text-slate-100 placeholder:text-slate-400"
+                      placeholder="Type your message here..."
+                      className="min-h-[52px] max-h-40 bg-slate-800/80 border-slate-700 text-slate-100 placeholder:text-slate-500 resize-none rounded-2xl"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
@@ -907,11 +945,12 @@ export default function PrideSphereMessaging() {
                   <EmojiPicker onPick={(e) => setDraft((d) => (d ? d + " " + e : e))} />
 
                   <Button 
-                    className="rounded-2xl" 
+                    className="rounded-2xl px-6 bg-primary hover:bg-primary/90" 
                     onClick={sendMessage}
                     disabled={!draft.trim() && !pendingMedia}
                   >
-                    <Send className="h-4 w-4 mr-1" /> Send
+                    <Send className="h-4 w-4 mr-2" /> 
+                    Send
                   </Button>
                 </div>
               </div>
