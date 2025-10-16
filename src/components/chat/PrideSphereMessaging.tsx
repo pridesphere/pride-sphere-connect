@@ -418,12 +418,12 @@ export default function PrideSphereMessaging() {
 
   const handleChatCreated = async (conversationId: string) => {
     console.log('Chat created with ID:', conversationId);
-    setActiveChatId(conversationId);
     
-    // Wait a bit for the database to be consistent
-    setTimeout(() => {
-      loadConversations();
-    }, 500);
+    // Immediately reload conversations
+    await loadConversations();
+    
+    // Then select the new conversation
+    setActiveChatId(conversationId);
   };
 
   const createConversation = async (isGroup: boolean = false, name?: string) => {

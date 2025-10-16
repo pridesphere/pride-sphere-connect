@@ -141,14 +141,10 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
     setLoading(true);
     
     try {
-      console.log('Starting conversation creation...');
-      
       // Check authentication state
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session check:', session?.user?.id);
       
       if (!session?.user) {
-        console.error('No authenticated user found');
         throw new Error('User not authenticated');
       }
 
@@ -185,10 +181,8 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       const conversationData = {
         is_group: isGroupChat,
         name: isGroupChat ? groupName || `Group with ${selectedUsers.length} members` : null,
-        created_by: session.user.id // Use session user id directly
+        created_by: session.user.id
       };
-
-      console.log('Creating conversation with data:', conversationData);
 
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
@@ -196,12 +190,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         .select()
         .single();
 
-      if (convError) {
-        console.error('Conversation creation error:', convError);
-        throw convError;
-      }
-
-      console.log('Conversation created successfully:', conversation.id);
+      if (convError) throw convError;
 
       // Add participants (current user + selected users)
       const participants = [session.user.id, ...selectedUsers];
@@ -211,18 +200,11 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         user_id: userId
       }));
 
-      console.log('Adding participants:', participantInserts);
-
       const { error: participantError } = await supabase
         .from('conversation_participants')
         .insert(participantInserts);
 
-      if (participantError) {
-        console.error('Participant insertion error:', participantError);
-        throw participantError;
-      }
-
-      console.log('Participants added successfully');
+      if (participantError) throw participantError;
 
       // Send welcome message (optional)
       try {
@@ -242,16 +224,20 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         // Silently handle welcome message errors
       }
 
+      // Close modal first
+      onClose();
+      resetForm();
+      
+      // Then notify parent and show success
       toast({
         title: "Success",
         description: `✨ ${isGroupChat ? 'Group chat' : 'Chat'} created successfully!`
       });
+      
+      // Call the callback to load the conversation
       onChatCreated(conversation.id);
-      onClose();
-      resetForm();
       
     } catch (error) {
-      console.error('Full error details:', error);
       toast({
         title: "Error",
         description: `Failed to create conversation: ${error.message}`,
