@@ -776,10 +776,7 @@ export type Database = {
         }
         Returns: string
       }
-      delete_all_user_mood_entries: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      delete_all_user_mood_entries: { Args: never; Returns: undefined }
       delete_community_cascade: {
         Args: { community_id_param: string }
         Returns: undefined
