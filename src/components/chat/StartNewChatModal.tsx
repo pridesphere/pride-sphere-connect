@@ -141,12 +141,20 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
     setLoading(true);
     
     try {
-      // Check authentication state
-      const { data: { session } } = await supabase.auth.getSession();
+      // Refresh session to ensure valid auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      console.log('Session refresh:', { 
+        session: !!session, 
+        userId: session?.user?.id, 
+        error: sessionError 
+      });
       
       if (!session?.user) {
-        throw new Error('User not authenticated');
+        throw new Error('User not authenticated. Please log in again.');
       }
+      
+      console.log('Creating conversation with user:', session.user.id);
 
       // Check if direct conversation already exists (for non-group chats)
       if (!isGroupChat && selectedUsers.length === 1) {
@@ -184,13 +192,20 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
         created_by: session.user.id
       };
 
+      console.log('Attempting to create conversation:', conversationData);
+
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert(conversationData)
         .select()
         .single();
 
-      if (convError) throw convError;
+      if (convError) {
+        console.error('Conversation creation error:', convError);
+        throw new Error(`Database error: ${convError.message}. Code: ${convError.code}`);
+      }
+      
+      console.log('Conversation created:', conversation);
 
       // Add participants (current user + selected users)
       const participants = [session.user.id, ...selectedUsers];
