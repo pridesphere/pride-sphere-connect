@@ -141,20 +141,20 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
     setLoading(true);
     
     try {
-      // Refresh session to ensure valid auth token
-      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      // Get current authenticated user
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
       
-      console.log('Session refresh:', { 
-        session: !!session, 
-        userId: session?.user?.id, 
-        error: sessionError 
+      console.log('Auth check:', { 
+        user: !!currentUser, 
+        userId: currentUser?.id, 
+        error: userError 
       });
       
-      if (!session?.user) {
-        throw new Error('User not authenticated. Please log in again.');
+      if (!currentUser) {
+        throw new Error('Authentication required. Please log in again.');
       }
       
-      console.log('Creating conversation with user:', session.user.id);
+      console.log('Creating conversation with user:', currentUser.id);
 
       // Check if direct conversation already exists (for non-group chats)
       if (!isGroupChat && selectedUsers.length === 1) {
@@ -189,7 +189,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       const conversationData = {
         is_group: isGroupChat,
         name: isGroupChat ? groupName || `Group with ${selectedUsers.length} members` : null,
-        created_by: session.user.id
+        created_by: currentUser.id
       };
 
       console.log('Attempting to create conversation:', conversationData);
@@ -208,7 +208,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
       console.log('Conversation created:', conversation);
 
       // Add participants (current user + selected users)
-      const participants = [session.user.id, ...selectedUsers];
+      const participants = [currentUser.id, ...selectedUsers];
       
       const participantInserts = participants.map(userId => ({
         conversation_id: conversation.id,
@@ -231,7 +231,7 @@ const StartNewChatModal: React.FC<StartNewChatModalProps> = ({
           .from('messages')
           .insert({
             conversation_id: conversation.id,
-            user_id: session.user.id,
+            user_id: currentUser.id,
             content: welcomeMessage,
             message_type: 'text'
           });
